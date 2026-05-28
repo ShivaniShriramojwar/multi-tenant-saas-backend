@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Socket Notification Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 24px;
+        background: #f7f7f8;
+        color: #1f2937;
+      }
+
+      label {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 110px;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-family: monospace;
+      }
+
+      button {
+        margin-top: 12px;
+        padding: 10px 14px;
+        border: 0;
+        border-radius: 6px;
+        background: #2563eb;
+        color: white;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      button:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+      }
+
+      pre {
+        margin-top: 20px;
+        min-height: 260px;
+        padding: 16px;
+        background: #111827;
+        color: #d1fae5;
+        border-radius: 6px;
+        overflow: auto;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Socket Notification Test</h1>
+
+    <label for="token">JWT token from login API</label>
+    <textarea id="token" placeholder="Paste token here"></textarea>
+
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+
+    <pre id="log">Waiting...\n</pre>
+
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script>
+      let socket;
+
+      const tokenInput = document.getElementById("token");
+      const connectBtn = document.getElementById("connectBtn");
+      const disconnectBtn = document.getElementById("disconnectBtn");
+      const logBox = document.getElementById("log");
+
+      function log(message) {
+        const time = new Date().toLocaleTimeString();
+        logBox.textContent += `[${time}] ${message}\n\n`;
+      }
+
+      connectBtn.addEventListener("click", () => {
+        const token = tokenInput.value.trim();
+
+        if (!token) {
+          log("Paste a JWT token first.");
+          return;
+        }
+
+        socket = io("http://localhost:5001", {
+          auth: { token },
+        });
+
+        socket.on("connect", () => {
+          log(`Connected: ${socket.id}`);
+          connectBtn.disabled = true;
+          disconnectBtn.disabled = false;
+        });
+
+        socket.on("notification", (data) => {
+          log(`Notification:\n${JSON.stringify(data, null, 2)}`);
+        });
+
+        socket.on("connect_error", (error) => {
+          log(`Connection error: ${error.message}`);
+        });
+
+        socket.on("disconnect", (reason) => {
+          log(`Disconnected: ${reason}`);
+          connectBtn.disabled = false;
+          disconnectBtn.disabled = true;
+        });
+      });
+
+      disconnectBtn.addEventListener("click", () => {
+        if (socket) {
+          socket.disconnect();
+        }
+      });
+    </script>
+  </body>
+</html>
