@@ -1,12 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 const DEFAULT_BODY_LIMIT = "1mb";
-const LOCAL_DEV_ORIGINS = new Set([
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:5173",
-]);
+const LOCAL_DEV_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
 const getRequestBodyLimit = () => process.env.REQUEST_BODY_LIMIT || DEFAULT_BODY_LIMIT;
 
@@ -20,7 +15,21 @@ const getAllowedCorsOrigins = () => {
     return new Set(configuredOrigins);
   }
 
-  return process.env.NODE_ENV === "production" ? new Set<string>() : LOCAL_DEV_ORIGINS;
+  return new Set<string>();
+};
+
+const isLocalDevOrigin = (origin: string) => {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
+  try {
+    const url = new URL(origin);
+
+    return ["http:", "https:"].includes(url.protocol) && LOCAL_DEV_HOSTS.has(url.hostname);
+  } catch {
+    return false;
+  }
 };
 
 const corsOptions = {
@@ -32,7 +41,7 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    if (getAllowedCorsOrigins().has(origin)) {
+    if (getAllowedCorsOrigins().has(origin) || isLocalDevOrigin(origin)) {
       return callback(null, true);
     }
 

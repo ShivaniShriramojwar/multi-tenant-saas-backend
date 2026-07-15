@@ -21,7 +21,8 @@ Set at least:
 
 ```bash
 PORT=5000
-MONGO_URL=mongodb://127.0.0.1:27017/backend-saas
+MONGO_URL=mongodb://127.0.0.1:27017/backend-saas?retryWrites=false
+MONGO_USE_TRANSACTIONS=false
 JWT_SECRET=replace-with-a-long-random-secret
 CLIENT_URL=http://localhost:3000,http://localhost:5173
 REDIS_HOST=127.0.0.1
@@ -84,7 +85,8 @@ email-worker:
 If using the compose Mongo container, set:
 
 ```bash
-MONGO_URL=mongodb://mongo:27017/backend-saas
+MONGO_URL=mongodb://mongo:27017/backend-saas?retryWrites=false
+MONGO_USE_TRANSACTIONS=false
 REDIS_HOST=redis
 ```
 
@@ -95,7 +97,8 @@ REDIS_HOST=redis
 | `PORT` | Recommended | HTTP port. Example uses `5000`; code fallback is `5001`. |
 | `NODE_ENV` | Recommended | Use `production` in production. |
 | `LOG_LEVEL` | No | Pino log level. Defaults to `info`. |
-| `MONGO_URL` | Yes | MongoDB connection string. |
+| `MONGO_URL` | Yes | MongoDB connection string. Use `retryWrites=false` for deployments that do not support retryable writes. |
+| `MONGO_USE_TRANSACTIONS` | No | Set to `true` only when MongoDB supports transactions, such as a replica set or managed MongoDB cluster. Defaults to non-transactional registration. |
 | `JWT_SECRET` | Yes | Secret used to sign and verify JWTs. Use a long random value. |
 | `CLIENT_URL` | Production yes | Comma-separated CORS allowed origins. |
 | `REQUEST_BODY_LIMIT` | No | JSON and URL-encoded body limit. Defaults to `1mb`. |

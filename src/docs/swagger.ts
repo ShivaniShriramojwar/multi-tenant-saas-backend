@@ -834,8 +834,8 @@ const swaggerSpec = {
   },
   servers: [
     {
-      url: "http://localhost:5001",
-      description: "Local development",
+      url: process.env.API_BASE_URL || "/",
+      description: process.env.API_BASE_URL ? "Configured API server" : "Current API server",
     },
   ],
   tags: [
@@ -928,7 +928,7 @@ const swaggerSpec = {
         properties: {
           name: { type: "string", minLength: 1, example: "Shivani Rao" },
           email: { type: "string", format: "email", example: "shivani@example.com" },
-          password: { type: "string", minLength: 6, format: "password", example: "secret123" },
+          password: { type: "string", minLength: 12, format: "password", example: "StrongPass123!" },
           tenantName: { type: "string", minLength: 1, example: "Acme SaaS" },
         },
       },
@@ -937,7 +937,7 @@ const swaggerSpec = {
         required: ["email", "password"],
         properties: {
           email: { type: "string", format: "email", example: "shivani@example.com" },
-          password: { type: "string", format: "password", example: "secret123" },
+          password: { type: "string", format: "password", example: "StrongPass123!" },
         },
       },
       RefreshTokenRequest: {
@@ -999,7 +999,7 @@ const swaggerSpec = {
         properties: {
           name: { type: "string", minLength: 1 },
           email: { type: "string", format: "email" },
-          password: { type: "string", minLength: 6, format: "password" },
+          password: { type: "string", minLength: 12, format: "password", example: "StrongPass123!" },
           role: { type: "string", enum: USER_ROLES },
         },
       },

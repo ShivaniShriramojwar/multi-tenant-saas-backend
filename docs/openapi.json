@@ -7,8 +7,8 @@
   },
   "servers": [
     {
-      "url": "http://localhost:5001",
-      "description": "Local development"
+      "url": "/",
+      "description": "Current API server"
     }
   ],
   "tags": [
@@ -282,9 +282,9 @@
           },
           "password": {
             "type": "string",
-            "minLength": 6,
+            "minLength": 12,
             "format": "password",
-            "example": "secret123"
+            "example": "StrongPass123!"
           },
           "tenantName": {
             "type": "string",
@@ -308,7 +308,7 @@
           "password": {
             "type": "string",
             "format": "password",
-            "example": "secret123"
+            "example": "StrongPass123!"
           }
         }
       },
@@ -521,8 +521,9 @@
           },
           "password": {
             "type": "string",
-            "minLength": 6,
-            "format": "password"
+            "minLength": 12,
+            "format": "password",
+            "example": "StrongPass123!"
           },
           "role": {
             "type": "string",
