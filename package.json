@@ -6,14 +6,24 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
     "start": "node dist/server.js",
-    "worker": "ts-node src/infrastructure/queue/order.worker.ts"
+    "worker": "ts-node src/infrastructure/queue/order.worker.ts",
+    "worker:order": "ts-node src/infrastructure/queue/order.worker.ts",
+    "worker:email": "ts-node src/infrastructure/queue/email.worker.ts",
+    "test": "jest",
+    "test:integration": "jest --config jest.integration.config.js",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1086.0",
+    "@aws-sdk/s3-request-presigner": "^3.1086.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.77.3",
     "cloudinary": "^2.10.0",
@@ -26,20 +36,30 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.6.2",
     "multer": "^2.1.1",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.9.1",
+    "@types/supertest": "^7.2.0",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "eslint": "^9.39.5",
+    "jest": "^29.7.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.11",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.64.0"
   }
 }

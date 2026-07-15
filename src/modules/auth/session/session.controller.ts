@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { AuthRequest } from "../../../common/interfaces/auth.interface";
 import {
   getSessionsService,
@@ -6,41 +6,34 @@ import {
   refreshAccessTokenService,
   revokeSessionService,
 } from "./session.service";
-import { refreshTokenSchema } from "./session.validation";
 
-const refreshTokenController = async (req: AuthRequest, res: Response) => {
+const refreshTokenController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const validatedBody = refreshTokenSchema.parse(req.body);
-    const tokens = await refreshAccessTokenService(validatedBody.refreshToken);
+    const tokens = await refreshAccessTokenService(req.body.refreshToken);
 
     return res.status(200).json({
       message: "Token refreshed successfully",
       data: tokens,
     });
-  } catch (error: any) {
-    return res.status(401).json({
-      message: error.issues?.[0]?.message || error.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
-const logoutController = async (req: AuthRequest, res: Response) => {
+const logoutController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const validatedBody = refreshTokenSchema.parse(req.body);
-    const result = await logoutService(validatedBody.refreshToken);
+    const result = await logoutService(req.body.refreshToken);
 
     return res.status(200).json({
       message: "Logout successful",
       data: result,
     });
-  } catch (error: any) {
-    return res.status(400).json({
-      message: error.issues?.[0]?.message || error.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
-const getSessionsController = async (req: AuthRequest, res: Response) => {
+const getSessionsController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const sessions = await getSessionsService(
       req.user!.userId,
@@ -51,12 +44,12 @@ const getSessionsController = async (req: AuthRequest, res: Response) => {
       message: "Sessions fetched successfully",
       data: sessions,
     });
-  } catch (error: any) {
-    return res.status(400).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
-const revokeSessionController = async (req: AuthRequest, res: Response) => {
+const revokeSessionController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const result = await revokeSessionService(
       req.params.id,
@@ -68,8 +61,8 @@ const revokeSessionController = async (req: AuthRequest, res: Response) => {
       message: "Session revoked successfully",
       data: result,
     });
-  } catch (error: any) {
-    return res.status(error.statusCode || 400).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 

@@ -1,13 +1,16 @@
 import mongoose, { Schema, Document } from "mongoose";
+import {
+  ORDER_STATUS,
+  ORDER_STATUSES,
+  OrderStatus,
+} from "../../common/constants/order-status";
+import {
+  PAYMENT_STATUS,
+  PAYMENT_STATUSES,
+  PaymentStatus,
+} from "../../common/constants/payment-status";
 
-enum OrderStatus {
-  PENDING = "pending",
-  PROCESSING = "processing",
-  COMPLETED = "completed",
-  FAILED = "failed",
-  CANCELLED = "cancelled",
-}
-interface OrderDocument extends Document {
+interface IOrder extends Document {
   productName: string;
   amount: number;
   status: OrderStatus;
@@ -17,9 +20,9 @@ interface OrderDocument extends Document {
 
   orderNumber: string;
 
-  paymentStatus: "pending" | "paid" | "failed";
+  paymentStatus: PaymentStatus;
 
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   invoicePdf?: {
     url: string;
     publicId: string;
@@ -39,11 +42,12 @@ interface OrderDocument extends Document {
   updatedAt: Date;
 }
 
-const orderSchema = new Schema<OrderDocument>(
+const orderSchema = new Schema<IOrder>(
   {
     productName: {
       type: String,
       required: true,
+      trim: true,
     },
 
     amount: {
@@ -53,14 +57,14 @@ const orderSchema = new Schema<OrderDocument>(
 
     status: {
       type: String,
-      enum: Object.values(OrderStatus), // ✅ correct place
-      default: OrderStatus.PENDING,
+      enum: ORDER_STATUSES,
+      default: ORDER_STATUS.PENDING,
     },
 
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid", "failed"],
-      default: "pending",
+      enum: PAYMENT_STATUSES,
+      default: PAYMENT_STATUS.PENDING,
     },
 
     orderNumber: {
@@ -108,8 +112,21 @@ const orderSchema = new Schema<OrderDocument>(
   },
 );
 
-orderSchema.index({ tenantId: 1, createdAt: -1 });
+orderSchema.index({
+  tenantId: 1,
+  createdAt: -1,
+});
+orderSchema.index({
+  tenantId: 1,
+  status: 1,
+  createdAt: -1,
+});
+orderSchema.index({ tenantId: 1, userId: 1 });
+orderSchema.index({
+  productName: "text",
+  orderNumber: "text",
+  status: "text",
+  paymentStatus: "text",
+});
 
-const Order = mongoose.model<OrderDocument>("Order", orderSchema);
-
-export { Order };
+export const Order = mongoose.model<IOrder>("Order", orderSchema);

@@ -1,3 +1,5 @@
+import { UserRole } from "../../../common/constants/roles";
+
 interface LoginInput {
   email: string;
   password: string;
@@ -6,12 +8,12 @@ interface LoginInput {
 interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  token: string;
+
   user: {
     id: string;
     name: string;
     email: string;
-    role: string;
+    role: UserRole;
   };
 }
 

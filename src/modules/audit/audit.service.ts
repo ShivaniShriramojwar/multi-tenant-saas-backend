@@ -1,11 +1,14 @@
-import { AuditAction, AuditLog } from "./audit.model";
+import { AuditLog } from "./audit.model";
+import { ClientSession } from "mongoose";
+import { AuditAction } from "../../common/constants/audit-actions";
 import { getPaginationMeta } from "../../common/utils/pagination.util";
+import { AuditTarget } from "../../common/constants/audit-targets";
 
 interface CreateAuditLogInput {
   tenantId: string;
   actorUserId: string;
   action: AuditAction;
-  targetType: "user" | "order" | "permission";
+  targetType: AuditTarget;
   targetId?: string;
   details?: Record<string, any>;
 }
@@ -15,12 +18,21 @@ interface AuditLogListQuery {
   limit: number;
   skip: number;
   action?: string;
-  targetType?: string;
+  targetType?: AuditTarget;
   search?: string;
 }
 
 const createAuditLog = async (data: CreateAuditLogInput) => {
   return AuditLog.create(data);
+};
+
+const createAuditLogWithSession = async (
+  data: CreateAuditLogInput,
+  session: ClientSession,
+) => {
+  const [auditLog] = await AuditLog.create([data], { session });
+
+  return auditLog;
 };
 
 const getAuditLogsService = async (
@@ -47,11 +59,12 @@ const getAuditLogsService = async (
 
   const [logs, total] = await Promise.all([
     AuditLog.find(filter)
-      .select("-__v")
+      .select("tenantId actorUserId action targetType targetId details createdAt updatedAt")
       .populate("actorUserId", "name email role")
       .sort({ createdAt: -1 })
       .skip(query.skip)
-      .limit(query.limit),
+      .limit(query.limit)
+      .lean(),
     AuditLog.countDocuments(filter),
   ]);
 
@@ -61,4 +74,4 @@ const getAuditLogsService = async (
   };
 };
 
-export { createAuditLog, getAuditLogsService };
+export { createAuditLog, createAuditLogWithSession, getAuditLogsService };

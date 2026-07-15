@@ -1,24 +1,22 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { AuthRequest } from "../../common/interfaces/auth.interface";
 import {
   getPermissionsService,
   updatePermissionsService,
 } from "./permission.service";
-import { updatePermissionsSchema } from "./permission.validation";
 
-const getPermissionsController = async (_req: AuthRequest, res: Response) => {
+const getPermissionsController = async (_req: AuthRequest, res: Response, next: NextFunction) => {
   return res.status(200).json({
     message: "Permissions fetched successfully",
     data: getPermissionsService(),
   });
 };
 
-const updatePermissionsController = async (req: AuthRequest, res: Response) => {
+const updatePermissionsController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const validatedBody = updatePermissionsSchema.parse(req.body);
-
-    const permissions = await updatePermissionsService(
-      validatedBody,
+    const permissions = updatePermissionsService(
+      req.body.role,
+      req.body.permissions,
       req.user!.tenantId,
       req.user!.userId,
     );
@@ -27,10 +25,8 @@ const updatePermissionsController = async (req: AuthRequest, res: Response) => {
       message: "Permissions updated successfully",
       data: permissions,
     });
-  } catch (error: any) {
-    return res.status(400).json({
-      message: error.issues?.[0]?.message || error.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 

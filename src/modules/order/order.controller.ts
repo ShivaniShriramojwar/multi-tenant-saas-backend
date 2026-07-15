@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { AuthRequest } from "../../common/interfaces/auth.interface";
 import { getPagination } from "../../common/utils/pagination.util";
 import {
@@ -10,7 +10,7 @@ import {
   uploadOrderAttachmentsService,
 } from "./order.service";
 
-const createOrderController = async (req: AuthRequest, res: Response) => {
+const createOrderController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;
     const tenantId = req.user!.tenantId;
@@ -21,12 +21,12 @@ const createOrderController = async (req: AuthRequest, res: Response) => {
       message: "Order created successfully",
       data: order,
     });
-  } catch (error: any) {
-    return res.status(400).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
-const getOrdersController = async (req: AuthRequest, res: Response) => {
+const getOrdersController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const orders = await getOrdersService(
       req.user!.userId,
@@ -45,12 +45,12 @@ const getOrdersController = async (req: AuthRequest, res: Response) => {
       data: orders.data,
       pagination: orders.pagination,
     });
-  } catch (error: any) {
-    return res.status(400).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
-const getOrderByIdController = async (req: AuthRequest, res: Response) => {
+const getOrderByIdController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 
@@ -65,12 +65,12 @@ const getOrderByIdController = async (req: AuthRequest, res: Response) => {
       message: "Order fetched successfully",
       data: order,
     });
-  } catch (error: any) {
-    return res.status(error.statusCode || 400).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
-const deleteOrderController = async (req: AuthRequest, res: Response) => {
+const deleteOrderController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const deletedOrder = await deleteOrderService(
       req.params.id,
@@ -82,12 +82,12 @@ const deleteOrderController = async (req: AuthRequest, res: Response) => {
       message: "Order deleted successfully",
       data: deletedOrder,
     });
-  } catch (error: any) {
-    return res.status(error.statusCode || 400).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
-const uploadInvoicePdfController = async (req: AuthRequest, res: Response) => {
+const uploadInvoicePdfController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Invoice PDF is required" });
@@ -96,6 +96,7 @@ const uploadInvoicePdfController = async (req: AuthRequest, res: Response) => {
     const order = await uploadInvoicePdfService(
       req.params.id,
       req.user!.tenantId,
+      req.user!.userId,
       req.file,
     );
 
@@ -103,14 +104,15 @@ const uploadInvoicePdfController = async (req: AuthRequest, res: Response) => {
       message: "Invoice PDF uploaded successfully",
       data: order,
     });
-  } catch (error: any) {
-    return res.status(error.statusCode || 400).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 
 const uploadOrderAttachmentsController = async (
   req: AuthRequest,
   res: Response,
+  next: NextFunction,
 ) => {
   try {
     const files = req.files as Express.Multer.File[] | undefined;
@@ -122,6 +124,7 @@ const uploadOrderAttachmentsController = async (
     const order = await uploadOrderAttachmentsService(
       req.params.id,
       req.user!.tenantId,
+      req.user!.userId,
       files,
     );
 
@@ -129,8 +132,8 @@ const uploadOrderAttachmentsController = async (
       message: "Order attachments uploaded successfully",
       data: order,
     });
-  } catch (error: any) {
-    return res.status(error.statusCode || 400).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 

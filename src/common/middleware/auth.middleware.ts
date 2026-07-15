@@ -1,7 +1,8 @@
 import { Response, NextFunction } from "express";
-import { AuthRequest, UserRole } from "../interfaces/auth.interface";
+import { AuthRequest } from "../interfaces/auth.interface";
 import { hasPermission, Permission } from "../permissions/role-permissions";
 import { verifyJwtToken } from "../utils/jwt.util";
+import { UserRole } from "../constants/roles";
 
 const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -14,7 +15,6 @@ const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
     }
 
     const token = authHeader.split(" ")[1];
-
     const decoded = verifyJwtToken(token);
 
     // attach user

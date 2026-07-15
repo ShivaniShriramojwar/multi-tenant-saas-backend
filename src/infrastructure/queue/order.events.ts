@@ -1,4 +1,5 @@
 import { QueueEvents } from "bullmq";
+import { logger } from "../../common/logger";
 import { emitTenantNotification } from "../socket/socket";
 import { orderQueue } from "./order.queue";
 import { connection } from "./redis";
@@ -42,7 +43,7 @@ const registerOrderQueueEvents = () => {
   });
 
   queueEvents.on("error", (error) => {
-    console.error("Order queue event listener error:", error.message);
+    logger.error({ err: error }, "Order queue event listener error");
   });
 
   return queueEvents;

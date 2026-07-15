@@ -6,6 +6,7 @@ import app from "./app";
 import { connectDB } from "./infrastructure/db/mongo";
 import { registerOrderQueueEvents } from "./infrastructure/queue/order.events";
 import { initSocket } from "./infrastructure/socket/socket";
+import { logger } from "./common/logger";
 
 const PORT = process.env.PORT || 5001;
 
@@ -17,9 +18,12 @@ const startServer = async () => {
   registerOrderQueueEvents();
 
   server.listen(Number(PORT), "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log("WebSocket server ready");
+    logger.info({ port: PORT }, "Server running");
+    logger.info("WebSocket server ready");
   });
 };
 
-startServer();
+startServer().catch((error) => {
+  logger.fatal({ err: error }, "Server startup failed");
+  process.exit(1);
+});

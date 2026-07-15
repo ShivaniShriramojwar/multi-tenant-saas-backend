@@ -9,9 +9,15 @@ interface OrderListQuery {
   paymentStatus?: string;
   userId?: string;
 }
-
+interface CreateOrderRepositoryInput {
+  productName: string;
+  amount: number;
+  userId: string;
+  tenantId: string;
+  orderNumber: string;
+}
 // Create order
-const createOrder = async (data: any) => {
+const createOrder = async (data: CreateOrderRepositoryInput) => {
   return Order.create(data);
 };
 
@@ -45,7 +51,12 @@ const getOrdersByTenant = async (tenantId: string, query: OrderListQuery) => {
   const filter = buildOrderFilter(tenantId, query);
 
   const [orders, total] = await Promise.all([
-    Order.find(filter).sort({ createdAt: -1 }).skip(query.skip).limit(query.limit),
+    Order.find(filter)
+      .select("productName amount userId tenantId orderNumber status paymentStatus invoicePdf attachments createdAt updatedAt")
+      .sort({ createdAt: -1 })
+      .skip(query.skip)
+      .limit(query.limit)
+      .lean(),
     Order.countDocuments(filter),
   ]);
 

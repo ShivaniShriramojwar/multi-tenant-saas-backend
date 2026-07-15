@@ -1,19 +1,7 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-interface IUser extends Document {
-  name: string;
-  email: string;
-  password: string;
-  tenantId: mongoose.Types.ObjectId;
-  role: "admin" | "manager" | "user";
-  profileImage?: {
-    url: string;
-    publicId: string;
-    uploadedAt: Date;
-  };
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { IUser } from "./user.types";
+import { USER_ROLES, ROLES } from "../../common/constants/roles";
 
 const userSchema = new Schema<IUser>(
   {
@@ -44,8 +32,8 @@ const userSchema = new Schema<IUser>(
 
     role: {
       type: String,
-      enum: ["admin", "manager", "user"],
-      default: "user",
+      enum: USER_ROLES,
+      default: ROLES.DEVELOPER,
     },
 
     profileImage: {
@@ -53,12 +41,28 @@ const userSchema = new Schema<IUser>(
       publicId: String,
       uploadedAt: Date,
     },
+
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+      select: false,
+    },
+
+    lockedUntil: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true,
   },
 );
 
+userSchema.index({ tenantId: 1, createdAt: -1 });
+userSchema.index({ tenantId: 1, role: 1 });
+userSchema.index({ name: "text", email: "text", role: "text" });
+
 const User = mongoose.model<IUser>("User", userSchema);
 
-export { User, IUser };
+export { User };

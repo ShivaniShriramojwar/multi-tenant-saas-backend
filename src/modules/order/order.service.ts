@@ -1,4 +1,6 @@
 import { orderQueue } from "../../infrastructure/queue/order.queue";
+import { logger } from "../../common/logger";
+import { AppError, BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../../common/errors/app-error";
 import {
   addOrderAttachments,
   createOrder,
@@ -7,12 +9,21 @@ import {
   getOrdersByTenant,
   updateOrderInvoicePdf,
 } from "./order.repository";
-import { UserRole } from "../../common/interfaces/auth.interface";
+
 import { getPaginationMeta } from "../../common/utils/pagination.util";
 import { emitTenantNotification } from "../../infrastructure/socket/socket";
 import { createAuditLog } from "../audit/audit.service";
-import { Order } from "./order.model"; // 🔥 FIX
-import { uploadToCloudinary } from "../../infrastructure/storage/cloudinary";
+
+import { uploadToS3 } from "../../infrastructure/storage/s3";
+import { ROLES, UserRole } from "../../common/constants/roles";
+import { DOCUMENT_CATEGORY } from "../../common/constants/document-category";
+import { ENTITY_TYPE } from "../../common/constants/entity-type";
+import {
+  createS3ObjectKey,
+  FILE_UPLOAD_RULES,
+  validateUploadFile,
+} from "../../common/utils/file-security.util";
+import { createDocument } from "../document/document.repository";
 
 interface CreateOrderInput {
   productName: string;
@@ -44,7 +55,10 @@ const createOrderService = async (
     orderNumber: generateOrderNumber(),
   });
 
-  console.log("📥 Adding job to queue...");
+  logger.info(
+    { orderId: order._id.toString(), tenantId, userId },
+    "Adding order job to queue",
+  );
 
   await orderQueue.add(
     "process-order",
@@ -63,7 +77,10 @@ const createOrderService = async (
     },
   );
 
-  console.log("✅ Job added");
+  logger.info(
+    { orderId: order._id.toString(), tenantId, userId },
+    "Order job added to queue",
+  );
 
   emitTenantNotification(tenantId, {
     type: "order.created",
@@ -87,7 +104,11 @@ const getOrdersService = async (
   role: UserRole,
   query: OrderListQuery,
 ) => {
-  if (role === "admin" || role === "manager") {
+  if (
+    role === ROLES.SUPER_ADMIN ||
+    role === ROLES.HEAD_PRODUCT_MANAGER ||
+    role === ROLES.TEAM_LEAD
+  ) {
     const result = await getOrdersByTenant(tenantId, query);
 
     return {
@@ -113,21 +134,18 @@ const getOrderByIdService = async (
   const order = await getOrderById(orderId);
 
   if (!order) {
-    const error = new Error("Order not found") as any;
-    error.statusCode = 404;
-    throw error;
+    throw new NotFoundError("Order not found");
   }
 
   if (order.tenantId.toString() !== tenantId) {
-    const error = new Error("Order not found") as any;
-    error.statusCode = 404;
-    throw error;
+    throw new NotFoundError("Order not found");
   }
 
-  if (role === "user" && order.userId.toString() !== userId) {
-    const error = new Error("Access denied") as any;
-    error.statusCode = 403;
-    throw error;
+  if (
+    (role === ROLES.DEVELOPER || role === ROLES.TESTER) &&
+    order.userId.toString() !== userId
+  ) {
+    throw new ForbiddenError("Access denied");
   }
 
   return {
@@ -147,9 +165,7 @@ const deleteOrderService = async (
   const order = await getOrderById(orderId);
 
   if (!order || order.tenantId.toString() !== tenantId) {
-    const error = new Error("Order not found") as any;
-    error.statusCode = 404;
-    throw error;
+    throw new NotFoundError("Order not found");
   }
 
   await deleteOrderById(orderId);
@@ -192,28 +208,48 @@ const deleteOrderService = async (
 const uploadInvoicePdfService = async (
   orderId: string,
   tenantId: string,
+  actorUserId: string,
   file: Express.Multer.File,
 ) => {
   const order = await getOrderById(orderId);
 
   if (!order || order.tenantId.toString() !== tenantId) {
-    const error = new Error("Order not found") as any;
-    error.statusCode = 404;
-    throw error;
+    throw new NotFoundError("Order not found");
   }
 
-  const uploaded = await uploadToCloudinary({
+  const folder = `backend-saas/${tenantId}/invoices`;
+  const { extension } = validateUploadFile(file, FILE_UPLOAD_RULES.pdf);
+  const key = createS3ObjectKey(folder, `${orderId}-invoice`, file.originalname);
+
+  const uploaded = await uploadToS3({
     buffer: file.buffer,
-    folder: `backend-saas/${tenantId}/invoices`,
-    resourceType: "raw",
-    publicId: `${orderId}-invoice`,
+    key,
+    contentType: file.mimetype,
   });
 
   const updatedOrder = await updateOrderInvoicePdf(orderId, {
-    url: uploaded.secure_url,
-    publicId: uploaded.public_id,
+    url: uploaded.url,
+    publicId: uploaded.key,
     originalName: file.originalname,
     uploadedAt: new Date(),
+  });
+
+  await createDocument({
+    name: file.originalname,
+    originalName: file.originalname,
+    url: uploaded.url,
+    publicId: uploaded.key,
+    resourceType: "s3",
+    mimeType: file.mimetype,
+    extension,
+    size: file.size,
+    category: DOCUMENT_CATEGORY.INVOICE,
+    tags: ["invoice"],
+    tenantId,
+    entityType: ENTITY_TYPE.ORDER,
+    entityId: orderId,
+    uploadedBy: actorUserId,
+    folder,
   });
 
   return updatedOrder;
@@ -222,28 +258,36 @@ const uploadInvoicePdfService = async (
 const uploadOrderAttachmentsService = async (
   orderId: string,
   tenantId: string,
+  actorUserId: string,
   files: Express.Multer.File[],
 ) => {
   const order = await getOrderById(orderId);
 
   if (!order || order.tenantId.toString() !== tenantId) {
-    const error = new Error("Order not found") as any;
-    error.statusCode = 404;
-    throw error;
+    throw new NotFoundError("Order not found");
   }
 
   const attachments = await Promise.all(
     files.map(async (file, index) => {
-      const uploaded = await uploadToCloudinary({
+      const folder = `backend-saas/${tenantId}/order-attachments`;
+      const { extension } = validateUploadFile(file, FILE_UPLOAD_RULES.attachment);
+      const key = createS3ObjectKey(
+        folder,
+        `${orderId}-${index}`,
+        file.originalname,
+      );
+      const uploaded = await uploadToS3({
         buffer: file.buffer,
-        folder: `backend-saas/${tenantId}/order-attachments`,
-        resourceType: "auto",
-        publicId: `${orderId}-${Date.now()}-${index}`,
+        key,
+        contentType: file.mimetype,
       });
 
       return {
-        url: uploaded.secure_url,
-        publicId: uploaded.public_id,
+        uploaded,
+        folder,
+        extension,
+        url: uploaded.url,
+        publicId: uploaded.key,
         originalName: file.originalname,
         mimeType: file.mimetype,
         size: file.size,
@@ -252,7 +296,32 @@ const uploadOrderAttachmentsService = async (
     }),
   );
 
-  return addOrderAttachments(orderId, attachments);
+  await Promise.all(
+    attachments.map((attachment) =>
+      createDocument({
+        name: attachment.originalName,
+        originalName: attachment.originalName,
+        url: attachment.url,
+        publicId: attachment.publicId,
+        resourceType: "s3",
+        mimeType: attachment.mimeType,
+        extension: attachment.extension,
+        size: attachment.size,
+        category: DOCUMENT_CATEGORY.ORDER_ATTACHMENT,
+        tags: ["order", "attachment"],
+        tenantId,
+        entityType: ENTITY_TYPE.ORDER,
+        entityId: orderId,
+        uploadedBy: actorUserId,
+        folder: attachment.folder,
+      }),
+    ),
+  );
+
+  return addOrderAttachments(
+    orderId,
+    attachments.map(({ uploaded, folder, extension, ...attachment }) => attachment),
+  );
 };
 
 export {

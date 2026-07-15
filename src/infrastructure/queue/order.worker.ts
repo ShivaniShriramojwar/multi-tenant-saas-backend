@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import { Worker, Job } from "bullmq";
+import { logger } from "../../common/logger";
 import { connection } from "./redis";
 import { updateOrderStatus } from "../../modules/order/order.repository";
 
@@ -8,40 +9,39 @@ import { connectDB } from "../db/mongo";
 
 const startWorker = async () => {
   try {
-    // 🔥 Connect DB
     await connectDB();
-    console.log("✅ Worker MongoDB connected");
+    logger.info("Order worker MongoDB connected");
 
-    console.log("🚀 Worker started...");
+    logger.info("Order worker started");
 
     const worker = new Worker(
       "order-queue",
       async (job: Job) => {
         const { orderId } = job.data;
 
-        console.log("📦 Processing order:", orderId);
+        logger.info(
+          { jobId: job.id, orderId, tenantId: job.data.tenantId },
+          "Processing order job",
+        );
 
         try {
-          // 🔥 STEP 1: processing
           await updateOrderStatus(orderId, "processing");
 
           const attempt = job.attemptsMade + 1;
-          console.log(`🔁 Attempt: ${attempt}`);
+          logger.info({ jobId: job.id, orderId, attempt }, "Order job attempt");
 
-          // 🔥 simulate failure
           if (attempt < 3) {
             throw new Error("Temporary failure");
           }
 
-          // 🔥 STEP 2: completed
           await updateOrderStatus(orderId, "completed");
 
-          console.log("✅ Order completed:", orderId);
+          logger.info({ jobId: job.id, orderId }, "Order completed");
 
           return true;
         } catch (error: any) {
-          console.log("⚠️ Error:", error.message);
-          throw error; // retry
+          logger.error({ err: error, jobId: job.id, orderId }, "Order job attempt failed");
+          throw error;
         }
       },
       {
@@ -50,31 +50,45 @@ const startWorker = async () => {
       },
     );
 
-    // 🔥 EVENTS
     worker.on("completed", (job) => {
-      console.log(`🎉 Job completed: ${job.id}`);
+      logger.info(
+        { jobId: job.id, orderId: job.data.orderId, tenantId: job.data.tenantId },
+        "Order job completed",
+      );
     });
 
     worker.on("failed", async (job, err) => {
-      console.log(`❌ Job failed: ${job?.id}`);
-      console.log("Attempts:", job?.attemptsMade);
+      logger.error(
+        {
+          err,
+          jobId: job?.id,
+          attemptsMade: job?.attemptsMade,
+          attempts: job?.opts.attempts,
+          orderId: job?.data.orderId,
+          tenantId: job?.data.tenantId,
+        },
+        "Order job failed",
+      );
 
       if (job && job.attemptsMade === job.opts.attempts) {
-        console.log("🚨 Final failure → marking FAILED");
+        logger.error(
+          { jobId: job.id, orderId: job.data.orderId, tenantId: job.data.tenantId },
+          "Order job exhausted retries; marking failed",
+        );
 
         await updateOrderStatus(job.data.orderId, "failed");
       }
     });
 
     worker.on("ready", () => {
-      console.log("✅ Worker connected to Redis");
+      logger.info("Order worker connected to Redis");
     });
 
     worker.on("error", (err) => {
-      console.error("🔥 Worker error:", err);
+      logger.error({ err }, "Order worker error");
     });
   } catch (error) {
-    console.error("❌ Worker startup failed:", error);
+    logger.fatal({ err: error }, "Order worker startup failed");
   }
 };
 

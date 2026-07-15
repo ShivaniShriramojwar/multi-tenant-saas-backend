@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { AuthRequest } from "../../common/interfaces/auth.interface";
 import {
   createUserWithRoleManagementService,
@@ -8,14 +8,12 @@ import {
   updateUserRoleService,
   uploadProfileImageService,
 } from "./user.service";
-import { hasPermission } from "../../common/permissions/role-permissions";
 import { getPagination } from "../../common/utils/pagination.util";
-import { createUserSchema, updateUserRoleSchema } from "./user.validation";
 
 /**
  * 🔹 Get logged-in user profile
  */
-const getUserProfileController = async (req: AuthRequest, res: Response) => {
+const getUserProfileController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.userId;
 
@@ -25,38 +23,33 @@ const getUserProfileController = async (req: AuthRequest, res: Response) => {
       message: "User profile fetched successfully",
       data: user,
     });
-  } catch (error: any) {
-    return res.status(400).json({
-      message: error.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
-const createUserController = async (req: AuthRequest, res: Response) => {
+const createUserController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.user!.tenantId;
-    const validatedBody = createUserSchema.parse(req.body);
     const user = await createUserWithRoleManagementService(
-      validatedBody,
+      req.body,
       tenantId,
-      hasPermission(req.user!.role, "manage_roles"),
       req.user!.userId,
+      req.user!.role,
     );
 
     return res.status(201).json({
       message: "User created successfully",
       data: user,
     });
-  } catch (error: any) {
-    return res.status(400).json({
-      message: error.issues?.[0]?.message || error.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 /**
  * 🔹 Get all users of same tenant
  */
-const getUsersController = async (req: AuthRequest, res: Response) => {
+const getUsersController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const tenantId = req.user!.tenantId;
     const userId = req.user!.userId;
@@ -74,14 +67,12 @@ const getUsersController = async (req: AuthRequest, res: Response) => {
       data: users.data,
       pagination: users.pagination,
     });
-  } catch (error: any) {
-    return res.status(400).json({
-      message: error.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
-const deleteUserController = async (req: AuthRequest, res: Response) => {
+const deleteUserController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const deletedUser = await deleteUserService(
       req.params.id,
@@ -93,20 +84,16 @@ const deleteUserController = async (req: AuthRequest, res: Response) => {
       message: "User deleted successfully",
       data: deletedUser,
     });
-  } catch (error: any) {
-    return res.status(error.statusCode || 400).json({
-      message: error.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
-const updateUserRoleController = async (req: AuthRequest, res: Response) => {
+const updateUserRoleController = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const validatedBody = updateUserRoleSchema.parse(req.body);
-
     const user = await updateUserRoleService(
       req.params.id,
-      validatedBody.role,
+      req.body.role,
       req.user!.tenantId,
       req.user!.userId,
     );
@@ -115,14 +102,16 @@ const updateUserRoleController = async (req: AuthRequest, res: Response) => {
       message: "User role updated successfully",
       data: user,
     });
-  } catch (error: any) {
-    return res.status(error.statusCode || 400).json({
-      message: error.issues?.[0]?.message || error.message,
-    });
+  } catch (error) {
+    next(error);
   }
 };
 
-const uploadProfileImageController = async (req: AuthRequest, res: Response) => {
+const uploadProfileImageController = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: "Profile image is required" });
@@ -138,8 +127,8 @@ const uploadProfileImageController = async (req: AuthRequest, res: Response) => 
       message: "Profile image uploaded successfully",
       data: user,
     });
-  } catch (error: any) {
-    return res.status(400).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 };
 

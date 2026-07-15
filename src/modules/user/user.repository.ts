@@ -40,11 +40,12 @@ const getUsersByTenant = async (tenantId: string, query: UserListQuery) => {
 
   const [users, total] = await Promise.all([
     User.find(filter)
-      .select("-password")
+      .select("name email tenantId role profileImage createdAt updatedAt")
       .populate("tenantId", "name")
       .sort({ createdAt: -1 })
       .skip(query.skip)
-      .limit(query.limit),
+      .limit(query.limit)
+      .lean(),
     User.countDocuments(filter),
   ]);
 

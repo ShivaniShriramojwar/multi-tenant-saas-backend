@@ -1,12 +1,21 @@
 import bcrypt from "bcryptjs";
-import { UserRole } from "../../common/interfaces/auth.interface";
+import { AppError, BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../../common/errors/app-error";
+
+import { ROLES, UserRole } from "../../common/constants/roles";
+import { AUDIT_ACTION } from "../../common/constants/audit-actions";
+import { hasPermission } from "../../common/permissions/role-permissions";
 import { getPaginationMeta } from "../../common/utils/pagination.util";
+
 import { emitTenantNotification } from "../../infrastructure/socket/socket";
+import { uploadToCloudinary } from "../../infrastructure/storage/cloudinary";
+
 import { createAuditLog } from "../audit/audit.service";
+
 import {
   createUser,
   findUserByEmail,
 } from "../auth/register/register.repository";
+
 import {
   deleteUserById,
   getUserById,
@@ -14,7 +23,6 @@ import {
   updateUserProfileImage,
   updateUserRoleById,
 } from "./user.repository";
-import { uploadToCloudinary } from "../../infrastructure/storage/cloudinary";
 
 interface CreateUserInput {
   name: string;
@@ -39,7 +47,7 @@ const getTenantInfo = (tenantId: any) => {
     };
   }
 
-  if (tenantId && typeof tenantId === "object" && "name" in tenantId) {
+  if (typeof tenantId === "object" && "name" in tenantId) {
     return {
       id: tenantId._id.toString(),
       name: tenantId.name,
@@ -61,77 +69,45 @@ const formatUserResponse = (user: any) => {
     email: user.email,
     role: user.role,
     tenant,
+    profileImage: user.profileImage,
   };
 };
 
 /**
- * 🔹 Get logged-in user profile
+ * Get logged-in user profile
  */
 const getUserProfileService = async (userId: string) => {
   const user = await getUserById(userId);
 
   if (!user) {
-    throw new Error("User not found");
+    throw new NotFoundError("User not found");
   }
 
   return formatUserResponse(user);
 };
-const createUserService = async (data: CreateUserInput, tenantId: string) => {
-  const { name, email, password, role } = data;
 
-  if (role === "admin") {
-    throw new Error("Creating admin users requires manage_roles permission");
-  }
-
-  const existingUser = await findUserByEmail(email);
-  if (existingUser) {
-    throw new Error("User already exists");
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const user = await createUser({
-    name,
-    email,
-    password: hashedPassword,
-    tenantId,
-    role,
-  });
-
-  const createdUser = {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    tenant: {
-      id: user.tenantId.toString(),
-    },
-  };
-
-  emitTenantNotification(tenantId, {
-    type: "user.created",
-    message: "A new user was created",
-    data: createdUser,
-  });
-
-  return createdUser;
-};
-
+/**
+ * Create user
+ */
 const createUserWithRoleManagementService = async (
   data: CreateUserInput,
   tenantId: string,
-  canManageRoles: boolean,
   actorUserId: string,
+  actorRole: UserRole,
 ) => {
-  if (data.role === "admin" && !canManageRoles) {
-    throw new Error("Creating admin users requires manage_roles permission");
+  if (
+    data.role === ROLES.SUPER_ADMIN &&
+    !hasPermission(actorRole, "manage_roles")
+  ) {
+    throw new ForbiddenError("You do not have permission to create a Super Admin user.");
   }
 
   const { name, email, password, role } = data;
 
   const existingUser = await findUserByEmail(email);
+
   if (existingUser) {
-    throw new Error("User already exists");
+    throw new ConflictError("User already exists");
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -163,18 +139,17 @@ const createUserWithRoleManagementService = async (
   await createAuditLog({
     tenantId,
     actorUserId,
-    action: "user.created",
+    action: AUDIT_ACTION.USER_CREATED,
     targetType: "user",
     targetId: user._id.toString(),
-    details: {
-      createdUser,
-    },
+    details: createdUser,
   });
 
   return createdUser;
 };
+
 /**
- * 🔹 Get all users of same tenant
+ * Get users
  */
 const getUsersService = async (
   userId: string,
@@ -182,7 +157,7 @@ const getUsersService = async (
   role: UserRole,
   query: UserListQuery,
 ) => {
-  if (role === "admin" || role === "manager") {
+  if (hasPermission(role, "manage_users")) {
     const result = await getUsersByTenant(tenantId, query);
 
     return {
@@ -191,21 +166,24 @@ const getUsersService = async (
     };
   }
 
-  // normal user → only self
   const user = await getUserById(userId);
+
   return {
     data: user ? [formatUserResponse(user)] : [],
     pagination: getPaginationMeta(query.page, query.limit, user ? 1 : 0),
   };
 };
 
+/**
+ * Delete user
+ */
 const deleteUserService = async (
   targetUserId: string,
   tenantId: string,
   currentUserId: string,
 ) => {
   if (targetUserId === currentUserId) {
-    throw new Error("Admin cannot delete their own account");
+    throw new BadRequestError("You cannot delete your own account");
   }
 
   const user = await getUserById(targetUserId);
@@ -213,9 +191,7 @@ const deleteUserService = async (
   const userTenant = getTenantInfo(user?.tenantId);
 
   if (!user || userTenant.id !== tenantId) {
-    const error = new Error("User not found") as any;
-    error.statusCode = 404;
-    throw error;
+    throw new NotFoundError("User not found");
   }
 
   await deleteUserById(targetUserId);
@@ -228,22 +204,37 @@ const deleteUserService = async (
     data: deletedUser,
   });
 
+  await createAuditLog({
+    tenantId,
+    actorUserId: currentUserId,
+    action: AUDIT_ACTION.USER_DELETED,
+    targetType: "user",
+    targetId: targetUserId,
+    details: deletedUser,
+  });
+
   return deletedUser;
 };
 
+/**
+ * Update user role
+ */
 const updateUserRoleService = async (
   targetUserId: string,
   role: UserRole,
   tenantId: string,
   actorUserId: string,
 ) => {
+  if (targetUserId === actorUserId) {
+    throw new BadRequestError("You cannot change your own role");
+  }
+
   const user = await getUserById(targetUserId);
+
   const userTenant = getTenantInfo(user?.tenantId);
 
   if (!user || userTenant.id !== tenantId) {
-    const error = new Error("User not found") as any;
-    error.statusCode = 404;
-    throw error;
+    throw new NotFoundError("User not found");
   }
 
   const previousRole = user.role;
@@ -257,7 +248,7 @@ const updateUserRoleService = async (
   await createAuditLog({
     tenantId,
     actorUserId,
-    action: "user.role_changed",
+    action: AUDIT_ACTION.USER_ROLE_CHANGED,
     targetType: "user",
     targetId: targetUserId,
     details: {
@@ -279,6 +270,9 @@ const updateUserRoleService = async (
   return formatUserResponse(updatedUser);
 };
 
+/**
+ * Upload profile image
+ */
 const uploadProfileImageService = async (
   userId: string,
   tenantId: string,
@@ -298,7 +292,7 @@ const uploadProfileImageService = async (
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new NotFoundError("User not found");
   }
 
   return formatUserResponse(user);
@@ -307,7 +301,6 @@ const uploadProfileImageService = async (
 export {
   getUserProfileService,
   getUsersService,
-  createUserService,
   createUserWithRoleManagementService,
   deleteUserService,
   updateUserRoleService,

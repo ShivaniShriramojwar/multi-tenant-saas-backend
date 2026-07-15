@@ -6,8 +6,6 @@ import { authLimiter } from "../../common/middleware/rate-limit.middleware";
 
 const router = Router();
 
-console.log("Auth router initialized");
-
 // 🔥 Mount feature routes
 router.use("/register", authLimiter, registerRoutes);
 router.use("/login", authLimiter, loginRoutes);

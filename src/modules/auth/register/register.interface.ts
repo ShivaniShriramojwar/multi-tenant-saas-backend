@@ -1,11 +1,10 @@
-import { UserRole } from "../../../common/interfaces/auth.interface";
+import { UserRole } from "../../../common/constants/roles";
 
 interface RegisterInput {
   name: string;
   email: string;
   password: string;
   tenantName: string;
-  role: UserRole;
 }
 
 interface RegisterResponse {
@@ -16,6 +15,7 @@ interface RegisterResponse {
     role: UserRole;
     tenantId: string;
   };
+
   tenant: {
     id: string;
     name: string;

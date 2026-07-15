@@ -1,55 +1,98 @@
 import { Router } from "express";
+
 import {
-  authorizePermission,
   verifyToken,
+  authorizePermission,
 } from "../../common/middleware/auth.middleware";
+
 import { writeLimiter } from "../../common/middleware/rate-limit.middleware";
+import { validate } from "../../common/middleware/validate.middleware";
+
 import {
   attachmentUpload,
   pdfUpload,
 } from "../../common/middleware/upload.middleware";
+
 import {
   createOrderController,
-  deleteOrderController,
-  getOrderByIdController,
   getOrdersController,
+  getOrderByIdController,
+  deleteOrderController,
   uploadInvoicePdfController,
   uploadOrderAttachmentsController,
 } from "./order.controller";
+import {
+  createOrderSchema,
+  getOrdersQuerySchema,
+  orderIdSchema,
+} from "./order.validation";
 
 const router = Router();
 
-// 🔥 Create order
-router.post("/", writeLimiter, verifyToken, authorizePermission("create_order"), createOrderController);
+/**
+ * ==========================================================
+ * Orders
+ * ==========================================================
+ */
 
-// 🔥 Get tenant orders
-router.get("/", verifyToken, getOrdersController);
+// Create Order
+router.post(
+  "/",
+  writeLimiter,
+  verifyToken,
+  authorizePermission("create_order"),
+  validate({ body: createOrderSchema }),
+  createOrderController,
+);
 
-// 🔥 Get order by ID
-router.get("/:id", verifyToken, getOrderByIdController);
+// Get All Orders
+router.get(
+  "/",
+  verifyToken,
+  authorizePermission("view_orders"),
+  validate({ query: getOrdersQuerySchema }),
+  getOrdersController,
+);
 
-// 🔥 Upload invoice PDF
+// Get Order By ID
+router.get(
+  "/:id",
+  verifyToken,
+  authorizePermission("view_orders"),
+  validate({ params: orderIdSchema }),
+  getOrderByIdController,
+);
+
+// Upload Invoice PDF
 router.post(
   "/:id/invoice",
   writeLimiter,
   verifyToken,
   authorizePermission("create_order"),
+  validate({ params: orderIdSchema }),
   pdfUpload.single("invoice"),
   uploadInvoicePdfController,
 );
 
-// 🔥 Upload order/product attachments
+// Upload Attachments
 router.post(
   "/:id/attachments",
   writeLimiter,
   verifyToken,
   authorizePermission("create_order"),
+  validate({ params: orderIdSchema }),
   attachmentUpload.array("attachments", 5),
   uploadOrderAttachmentsController,
 );
 
-// 🔥 Delete order
-router.delete("/:id", writeLimiter, verifyToken, authorizePermission("delete_order"), deleteOrderController);
+// Delete Order
+router.delete(
+  "/:id",
+  writeLimiter,
+  verifyToken,
+  authorizePermission("delete_order"),
+  validate({ params: orderIdSchema }),
+  deleteOrderController,
+);
 
-console.log("Order routes loaded: DELETE /api/v1/orders/:id");
 export default router;

@@ -1,0 +1,6912 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Backend SaaS API",
+    "version": "1.0.0",
+    "description": "OpenAPI documentation for authentication, users, projects, tasks, bugs, comments, documents, notifications, search, reports, and analytics."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5001",
+      "description": "Local development"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Registration, login, token refresh, logout, and sessions."
+    },
+    {
+      "name": "Users",
+      "description": "Tenant users, roles, profiles, and profile images."
+    },
+    {
+      "name": "Projects",
+      "description": "Project management."
+    },
+    {
+      "name": "Tasks",
+      "description": "Task management, assignment, and status updates."
+    },
+    {
+      "name": "Bugs",
+      "description": "Bug tracking, assignment, status, and severity updates."
+    },
+    {
+      "name": "Comments",
+      "description": "Entity comments and attachments."
+    },
+    {
+      "name": "Documents",
+      "description": "Document upload, metadata, filtering, and downloads."
+    },
+    {
+      "name": "Notifications",
+      "description": "In-app and email notification workflows."
+    },
+    {
+      "name": "Search",
+      "description": "Cross-resource search."
+    },
+    {
+      "name": "Reports",
+      "description": "Project, task, bug, team, order, and audit reports."
+    },
+    {
+      "name": "Analytics",
+      "description": "Analytics events, summaries, trends, and top events."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Send the access token as `Authorization: Bearer <token>`."
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Validation or malformed request error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "message": "Validation failed",
+              "errors": [
+                {
+                  "path": "email",
+                  "message": "Invalid email address"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "JWT token is missing, invalid, or expired",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "message": "Unauthorized"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Authenticated user does not have the required permission",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "message": "Forbidden"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "message": "Project not found"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Request conflicts with current resource state",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "message": "Project cannot be deleted while it has tasks or bugs",
+              "details": {
+                "tasks": 2,
+                "bugs": 1
+              }
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "Too many requests",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "message": "Too many requests"
+            }
+          }
+        }
+      },
+      "InternalError": {
+        "description": "Unexpected server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "message": "Internal server error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "example": 1
+          },
+          "limit": {
+            "type": "integer",
+            "example": 10
+          },
+          "total": {
+            "type": "integer",
+            "example": 42
+          },
+          "totalPages": {
+            "type": "integer",
+            "example": 5
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "example": true
+          },
+          "hasPrevPage": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "DeleteResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "deleted": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          }
+        }
+      },
+      "RegisterRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password",
+          "tenantName"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Shivani Rao"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "shivani@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "format": "password",
+            "example": "secret123"
+          },
+          "tenantName": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Acme SaaS"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "shivani@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "secret123"
+          }
+        }
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "required": [
+          "refreshToken"
+        ],
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "example": "refresh.jwt.token"
+          }
+        }
+      },
+      "TokenPayload": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "access.jwt.token"
+          },
+          "refreshToken": {
+            "type": "string",
+            "example": "refresh.jwt.token"
+          }
+        }
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "user": {
+                "$ref": "#/components/schemas/User"
+              },
+              "accessToken": {
+                "type": "string",
+                "example": "access.jwt.token"
+              },
+              "refreshToken": {
+                "type": "string",
+                "example": "refresh.jwt.token"
+              }
+            }
+          }
+        }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/TokenPayload"
+          }
+        }
+      },
+      "Session": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "userId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "userAgent": {
+                "type": "string",
+                "example": "Mozilla/5.0"
+              },
+              "ipAddress": {
+                "type": "string",
+                "example": "127.0.0.1"
+              },
+              "revokedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          }
+        ]
+      },
+      "SessionsResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Session"
+            }
+          }
+        }
+      },
+      "User": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "Shivani Rao"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "example": "shivani@example.com"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "super_admin",
+                  "head_product_manager",
+                  "team_lead",
+                  "developer",
+                  "tester"
+                ]
+              },
+              "profileImageUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "isActive": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          }
+        ]
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password",
+          "role"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "format": "password"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "super_admin",
+              "head_product_manager",
+              "team_lead",
+              "developer",
+              "tester"
+            ]
+          }
+        }
+      },
+      "UpdateUserRoleRequest": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "super_admin",
+              "head_product_manager",
+              "team_lead",
+              "developer",
+              "tester"
+            ]
+          }
+        }
+      },
+      "ProfileImageUploadRequest": {
+        "type": "object",
+        "required": [
+          "image"
+        ],
+        "properties": {
+          "image": {
+            "type": "string",
+            "format": "binary"
+          }
+        }
+      },
+      "UserResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/User"
+          }
+        }
+      },
+      "UserListResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/User"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/PaginationMeta"
+              }
+            }
+          }
+        }
+      },
+      "Project": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "example": "Client Portal"
+              },
+              "description": {
+                "type": "string",
+                "example": "Build a client portal MVP."
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "COMPLETED",
+                  "ON_HOLD"
+                ]
+              },
+              "startDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "endDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "createdBy": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              }
+            }
+          }
+        ]
+      },
+      "CreateProjectRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "description"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string",
+            "minLength": 5
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "ON_HOLD"
+            ],
+            "default": "ACTIVE"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "UpdateProjectRequest": {
+        "type": "object",
+        "description": "All fields are optional, but at least one field must be provided.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string",
+            "minLength": 5
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "ON_HOLD"
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "ProjectResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Project"
+          }
+        }
+      },
+      "ProjectListResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/PaginationMeta"
+              }
+            }
+          }
+        }
+      },
+      "Task": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "projectId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "assignedTo": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdBy": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "TODO",
+                  "IN_PROGRESS",
+                  "IN_REVIEW",
+                  "DONE",
+                  "BLOCKED"
+                ]
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "CRITICAL"
+                ]
+              },
+              "dueDate": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          }
+        ]
+      },
+      "CreateTaskRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "projectId"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string",
+            "minLength": 5
+          },
+          "projectId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "assignedTo": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "TODO",
+              "IN_PROGRESS",
+              "IN_REVIEW",
+              "DONE",
+              "BLOCKED"
+            ],
+            "default": "TODO"
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "default": "MEDIUM"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "UpdateTaskRequest": {
+        "type": "object",
+        "description": "Partial task update. Any subset of create fields is accepted.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string",
+            "minLength": 5
+          },
+          "projectId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "assignedTo": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "TODO",
+              "IN_PROGRESS",
+              "IN_REVIEW",
+              "DONE",
+              "BLOCKED"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ]
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "UpdateTaskStatusRequest": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "TODO",
+              "IN_PROGRESS",
+              "IN_REVIEW",
+              "DONE",
+              "BLOCKED"
+            ]
+          }
+        }
+      },
+      "AssignRequest": {
+        "type": "object",
+        "required": [
+          "assignedTo"
+        ],
+        "properties": {
+          "assignedTo": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          }
+        }
+      },
+      "TaskResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Task"
+          }
+        }
+      },
+      "TaskListResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Task"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/PaginationMeta"
+              }
+            }
+          }
+        }
+      },
+      "Bug": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "projectId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "taskId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "assignedTo": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "reportedBy": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "severity": {
+                "type": "string",
+                "enum": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "CRITICAL"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "OPEN",
+                  "IN_PROGRESS",
+                  "FIXED",
+                  "VERIFIED",
+                  "CLOSED"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "CreateBugRequest": {
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "projectId"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string",
+            "minLength": 5
+          },
+          "projectId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "taskId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "assignedTo": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ],
+            "default": "MEDIUM"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "FIXED",
+              "VERIFIED",
+              "CLOSED"
+            ],
+            "default": "OPEN"
+          }
+        }
+      },
+      "UpdateBugRequest": {
+        "type": "object",
+        "description": "Partial bug update. Any subset of create fields is accepted.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string",
+            "minLength": 5
+          },
+          "projectId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "taskId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "assignedTo": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "FIXED",
+              "VERIFIED",
+              "CLOSED"
+            ]
+          }
+        }
+      },
+      "UpdateBugStatusRequest": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "IN_PROGRESS",
+              "FIXED",
+              "VERIFIED",
+              "CLOSED"
+            ]
+          }
+        }
+      },
+      "UpdateBugSeverityRequest": {
+        "type": "object",
+        "required": [
+          "severity"
+        ],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ]
+          }
+        }
+      },
+      "BugResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Bug"
+          }
+        }
+      },
+      "BugListResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Bug"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/PaginationMeta"
+              }
+            }
+          }
+        }
+      },
+      "Comment": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "string"
+              },
+              "entityType": {
+                "type": "string",
+                "enum": [
+                  "PROJECT",
+                  "TASK",
+                  "BUG",
+                  "ORDER",
+                  "COMMENT"
+                ]
+              },
+              "entityId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "parentComment": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "mentions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FileAttachment"
+                }
+              },
+              "createdBy": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              }
+            }
+          }
+        ]
+      },
+      "CreateCommentRequest": {
+        "type": "object",
+        "required": [
+          "content",
+          "entityId"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "PROJECT",
+              "TASK",
+              "BUG",
+              "ORDER",
+              "COMMENT"
+            ],
+            "default": "TASK"
+          },
+          "entityId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "parentComment": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "maxItems": 5
+          }
+        }
+      },
+      "UpdateCommentRequest": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CommentResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Comment"
+          }
+        }
+      },
+      "CommentListResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Comment"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/PaginationMeta"
+              }
+            }
+          }
+        }
+      },
+      "FileAttachment": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "key": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "originalName": {
+            "type": "string"
+          }
+        }
+      },
+      "Document": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "PRODUCT_REQUIREMENT",
+                  "ARCHITECTURE_DIAGRAM",
+                  "UI_DESIGN",
+                  "CLIENT_DOCUMENT",
+                  "PROJECT_PLAN",
+                  "API_SPECIFICATION",
+                  "IMPLEMENTATION_SCREENSHOT",
+                  "OUTPUT_FILE",
+                  "TECHNICAL_NOTE",
+                  "TEST_DATA",
+                  "BUG_SCREENSHOT",
+                  "SCREEN_RECORDING",
+                  "CONSOLE_LOG",
+                  "NETWORK_LOG",
+                  "REPRODUCTION_FILE",
+                  "INVOICE",
+                  "PAYMENT_PROOF",
+                  "ORDER_ATTACHMENT",
+                  "CONTRACT",
+                  "RECEIPT",
+                  "OTHER"
+                ]
+              },
+              "entityType": {
+                "type": "string",
+                "enum": [
+                  "PROJECT",
+                  "TASK",
+                  "BUG",
+                  "ORDER",
+                  "COMMENT"
+                ]
+              },
+              "entityId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "projectId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "taskId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "bugId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "orderId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "uploadedBy": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "mimeType": {
+                "type": "string"
+              },
+              "size": {
+                "type": "integer"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        ]
+      },
+      "UploadDocumentRequest": {
+        "type": "object",
+        "required": [
+          "documents"
+        ],
+        "properties": {
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "maxItems": 10
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2
+          },
+          "title": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "PRODUCT_REQUIREMENT",
+              "ARCHITECTURE_DIAGRAM",
+              "UI_DESIGN",
+              "CLIENT_DOCUMENT",
+              "PROJECT_PLAN",
+              "API_SPECIFICATION",
+              "IMPLEMENTATION_SCREENSHOT",
+              "OUTPUT_FILE",
+              "TECHNICAL_NOTE",
+              "TEST_DATA",
+              "BUG_SCREENSHOT",
+              "SCREEN_RECORDING",
+              "CONSOLE_LOG",
+              "NETWORK_LOG",
+              "REPRODUCTION_FILE",
+              "INVOICE",
+              "PAYMENT_PROOF",
+              "ORDER_ATTACHMENT",
+              "CONTRACT",
+              "RECEIPT",
+              "OTHER"
+            ],
+            "default": "OTHER"
+          },
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "PROJECT",
+              "TASK",
+              "BUG",
+              "ORDER",
+              "COMMENT"
+            ]
+          },
+          "entityId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "projectId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "taskId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "bugId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "orderId": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{24}$",
+            "example": "64f8a2e2c19f6b4f3a8f4d11"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20
+          }
+        },
+        "description": "Provide either entityType with entityId, or one of projectId, taskId, bugId, or orderId."
+      },
+      "UpdateDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2
+          },
+          "title": {
+            "type": "string",
+            "minLength": 2
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "PRODUCT_REQUIREMENT",
+              "ARCHITECTURE_DIAGRAM",
+              "UI_DESIGN",
+              "CLIENT_DOCUMENT",
+              "PROJECT_PLAN",
+              "API_SPECIFICATION",
+              "IMPLEMENTATION_SCREENSHOT",
+              "OUTPUT_FILE",
+              "TECHNICAL_NOTE",
+              "TEST_DATA",
+              "BUG_SCREENSHOT",
+              "SCREEN_RECORDING",
+              "CONSOLE_LOG",
+              "NETWORK_LOG",
+              "REPRODUCTION_FILE",
+              "INVOICE",
+              "PAYMENT_PROOF",
+              "ORDER_ATTACHMENT",
+              "CONTRACT",
+              "RECEIPT",
+              "OTHER"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20
+          }
+        }
+      },
+      "DocumentResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Document"
+          }
+        }
+      },
+      "DocumentListResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Document"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/PaginationMeta"
+              }
+            }
+          }
+        }
+      },
+      "DocumentUploadResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Document"
+            }
+          }
+        }
+      },
+      "DocumentDownloadResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "downloadUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "expiresIn": {
+                "type": "integer",
+                "example": 900
+              }
+            }
+          }
+        }
+      },
+      "Notification": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "recipientId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "actorUserId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "type": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "priority": {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "normal",
+                  "high"
+                ]
+              },
+              "channels": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "in_app",
+                    "email"
+                  ]
+                }
+              },
+              "entityType": {
+                "type": "string"
+              },
+              "entityId": {
+                "type": "string"
+              },
+              "metadata": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "readAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "archivedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          }
+        ]
+      },
+      "CreateNotificationRequest": {
+        "type": "object",
+        "required": [
+          "recipientId",
+          "type",
+          "title",
+          "message"
+        ],
+        "properties": {
+          "recipientId": {
+            "type": "string"
+          },
+          "actorUserId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ]
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "in_app",
+                "email"
+              ]
+            }
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "NotificationResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Notification"
+          }
+        }
+      },
+      "NotificationListResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Notification"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/PaginationMeta"
+              }
+            }
+          }
+        }
+      },
+      "UnreadNotificationCountResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "example": 3
+              }
+            }
+          }
+        }
+      },
+      "SearchResultItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "projects",
+              "tasks",
+              "bugs",
+              "documents",
+              "comments",
+              "activities",
+              "notifications",
+              "analytics",
+              "emails",
+              "orders",
+              "users"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-15T10:30:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-15T10:30:00.000Z"
+          }
+        }
+      },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "query": {
+                "type": "string"
+              },
+              "total": {
+                "type": "integer"
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "page": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  }
+                }
+              },
+              "counts": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              },
+              "results": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SearchResultItem"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ReportResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "example": "projects"
+              },
+              "format": {
+                "type": "string",
+                "enum": [
+                  "json",
+                  "csv",
+                  "excel",
+                  "pdf"
+                ]
+              },
+              "fromDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "toDate": {
+                "type": "string",
+                "format": "date"
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              },
+              "file": {
+                "$ref": "#/components/schemas/Document"
+              }
+            }
+          }
+        }
+      },
+      "AnalyticsEvent": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "_id": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "tenantId": {
+                "type": "string",
+                "pattern": "^[a-fA-F0-9]{24}$",
+                "example": "64f8a2e2c19f6b4f3a8f4d11"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "userId": {
+                "type": "string"
+              },
+              "eventName": {
+                "type": "string"
+              },
+              "entityType": {
+                "type": "string"
+              },
+              "entityId": {
+                "type": "string"
+              },
+              "properties": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "occurredAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-07-15T10:30:00.000Z"
+              }
+            }
+          }
+        ]
+      },
+      "CreateAnalyticsEventRequest": {
+        "type": "object",
+        "required": [
+          "eventName"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "eventName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "entityType": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "entityId": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AnalyticsEventResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AnalyticsEvent"
+          }
+        }
+      },
+      "AnalyticsEventListResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnalyticsEvent"
+                }
+              },
+              "pagination": {
+                "$ref": "#/components/schemas/PaginationMeta"
+              }
+            }
+          }
+        }
+      },
+      "AnalyticsSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "totalEvents": {
+                "type": "integer",
+                "example": 1200
+              },
+              "uniqueUsers": {
+                "type": "integer",
+                "example": 88
+              },
+              "byEventName": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
+      "AnalyticsTrendResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bucket": {
+                  "type": "string",
+                  "example": "2026-07-15"
+                },
+                "count": {
+                  "type": "integer",
+                  "example": 42
+                }
+              }
+            }
+          }
+        }
+      },
+      "TopAnalyticsEventsResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "Request completed successfully"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "eventName": {
+                  "type": "string",
+                  "example": "task.created"
+                },
+                "count": {
+                  "type": "integer",
+                  "example": 21
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Register a tenant and initial user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Login and receive JWT tokens",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Refresh access token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Logout using a refresh token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logout successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/sessions": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "List active sessions",
+        "responses": {
+          "200": {
+            "description": "Sessions fetched successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/sessions/{id}": {
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Revoke a session",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session revoked successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/users/profile": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get current user profile",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/users/profile/image": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ],
+        "summary": "Upload current user's profile image",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfileImageUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/users": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ],
+        "summary": "List users",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number.",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page.",
+            "example": 10
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Search by user name or email."
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "super_admin",
+                "head_product_manager",
+                "team_lead",
+                "developer",
+                "tester"
+              ]
+            },
+            "description": "Filter by role."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ],
+        "summary": "Create user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{id}": {
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ],
+        "summary": "Delete user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{id}/role": {
+      "patch": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update user role",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/projects": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Create project",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "project created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "List projects",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number.",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page.",
+            "example": 10
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "COMPLETED",
+                "ON_HOLD"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Projects fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/projects/{id}": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Get project by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Update project",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProjectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "project updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Projects"
+        ],
+        "summary": "Delete project",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "project deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Create task",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "task created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "List tasks",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number.",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page.",
+            "example": 10
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "TODO",
+                "IN_PROGRESS",
+                "IN_REVIEW",
+                "DONE",
+                "BLOCKED"
+              ]
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "LOW",
+                "MEDIUM",
+                "HIGH",
+                "CRITICAL"
+              ]
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "assignedTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tasks fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Get task by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Update task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "task updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Delete task",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "task deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/assign": {
+      "patch": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Assign task to a user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{id}/status": {
+      "patch": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Tasks"
+        ],
+        "summary": "Update task status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTaskStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/bugs": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Bugs"
+        ],
+        "summary": "Create bug",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBugRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "bug created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BugResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Bugs"
+        ],
+        "summary": "List bugs",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number.",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page.",
+            "example": 10
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "IN_PROGRESS",
+                "FIXED",
+                "VERIFIED",
+                "CLOSED"
+              ]
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "LOW",
+                "MEDIUM",
+                "HIGH",
+                "CRITICAL"
+              ]
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "assignedTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "reportedBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bugs fetched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BugListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/bugs/{id}": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Bugs"
+        ],
+        "summary": "Get bug by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BugResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Bugs"
+        ],
+        "summary": "Update bug",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBugRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "bug updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BugResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Bugs"
+        ],
+        "summary": "Delete bug",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "bug deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/bugs/{id}/assign": {
+      "patch": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Bugs"
+        ],
+        "summary": "Assign bug to a user",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BugResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/bugs/{id}/status": {
+      "patch": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Bugs"
+        ],
+        "summary": "Update bug status",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBugStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BugResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/bugs/{id}/severity": {
+      "patch": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Bugs"
+        ],
+        "summary": "Update bug severity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBugSeverityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BugResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/comments": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Create comment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Comments"
+        ],
+        "summary": "List comments",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number.",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page.",
+            "example": 10
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PROJECT",
+                "TASK",
+                "BUG",
+                "ORDER",
+                "COMMENT"
+              ]
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "createdBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/comments/{id}": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Get comment by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Update comment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCommentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Comments"
+        ],
+        "summary": "Delete comment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/documents": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Upload documents",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentUploadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "summary": "List documents",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number.",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page.",
+            "example": 10
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PRODUCT_REQUIREMENT",
+                "ARCHITECTURE_DIAGRAM",
+                "UI_DESIGN",
+                "CLIENT_DOCUMENT",
+                "PROJECT_PLAN",
+                "API_SPECIFICATION",
+                "IMPLEMENTATION_SCREENSHOT",
+                "OUTPUT_FILE",
+                "TECHNICAL_NOTE",
+                "TEST_DATA",
+                "BUG_SCREENSHOT",
+                "SCREEN_RECORDING",
+                "CONSOLE_LOG",
+                "NETWORK_LOG",
+                "REPRODUCTION_FILE",
+                "INVOICE",
+                "PAYMENT_PROOF",
+                "ORDER_ATTACHMENT",
+                "CONTRACT",
+                "RECEIPT",
+                "OTHER"
+              ]
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PROJECT",
+                "TASK",
+                "BUG",
+                "ORDER",
+                "COMMENT"
+              ]
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "projectId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "taskId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "bugId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "orderId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "uploadedBy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            }
+          },
+          {
+            "name": "mimeType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get document by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "put": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Update document metadata",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Delete document",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/download-url": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get signed document download URL",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDownloadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/documents/{id}/download": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get document download URL",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentDownloadResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Create notification",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotificationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "List notifications",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number.",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page.",
+            "example": 10
+          },
+          {
+            "name": "readStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "read",
+                "unread"
+              ]
+            }
+          },
+          {
+            "name": "archived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "low",
+                "normal",
+                "high"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/unread-count": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Get unread notification count",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadNotificationCountResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/read-all": {
+      "patch": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Mark all notifications as read",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{id}": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Get notification by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Delete notification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{id}/read": {
+      "patch": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Mark notification as read",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{id}/archive": {
+      "patch": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ],
+        "summary": "Archive notification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search across resources",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "description": "Search term.",
+            "example": "api"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25,
+              "default": 5
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "projects",
+                  "tasks",
+                  "bugs",
+                  "documents",
+                  "comments",
+                  "activities",
+                  "notifications",
+                  "analytics",
+                  "emails",
+                  "orders",
+                  "users"
+                ]
+              }
+            },
+            "description": "Comma-separated or repeated resource types."
+          },
+          {
+            "name": "types",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "projects",
+                  "tasks",
+                  "bugs",
+                  "documents",
+                  "comments",
+                  "activities",
+                  "notifications",
+                  "analytics",
+                  "emails",
+                  "orders",
+                  "users"
+                ]
+              }
+            },
+            "description": "Alias for type."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/projects": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Projects report",
+        "parameters": [
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv",
+                "excel",
+                "pdf"
+              ],
+              "default": "json"
+            }
+          },
+          {
+            "name": "upload",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Upload generated report as a document."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/tasks": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Tasks report",
+        "parameters": [
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv",
+                "excel",
+                "pdf"
+              ],
+              "default": "json"
+            }
+          },
+          {
+            "name": "upload",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Upload generated report as a document."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/bugs": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Bugs report",
+        "parameters": [
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv",
+                "excel",
+                "pdf"
+              ],
+              "default": "json"
+            }
+          },
+          {
+            "name": "upload",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Upload generated report as a document."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/team-workload": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Team workload report",
+        "parameters": [
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv",
+                "excel",
+                "pdf"
+              ],
+              "default": "json"
+            }
+          },
+          {
+            "name": "upload",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Upload generated report as a document."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/orders": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Orders report",
+        "parameters": [
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv",
+                "excel",
+                "pdf"
+              ],
+              "default": "json"
+            }
+          },
+          {
+            "name": "upload",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Upload generated report as a document."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/reports/audit": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Reports"
+        ],
+        "summary": "Audit report",
+        "parameters": [
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv",
+                "excel",
+                "pdf"
+              ],
+              "default": "json"
+            }
+          },
+          {
+            "name": "upload",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Upload generated report as a document."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/events": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Create analytics event",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnalyticsEventRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsEventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "List analytics events",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number.",
+            "example": 1
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Items per page.",
+            "example": 10
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventName",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsEventListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/events/{id}": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get analytics event by ID",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-fA-F0-9]{24}$",
+              "example": "64f8a2e2c19f6b4f3a8f4d11"
+            },
+            "description": "MongoDB ObjectId."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsEventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/summary": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get analytics summary",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventName",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsSummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/trend": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get analytics trend",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventName",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hour",
+                "day",
+                "month"
+              ],
+              "default": "day"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsTrendResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/top-events": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Analytics"
+        ],
+        "summary": "Get top analytics events",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventName",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopAnalyticsEventsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  }
+}

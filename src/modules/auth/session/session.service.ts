@@ -1,4 +1,5 @@
-import { UserRole } from "../../../common/interfaces/auth.interface";
+import { UserRole } from "../../../common/constants/roles";
+import { NotFoundError, UnauthorizedError } from "../../../common/errors/app-error";
 import { generateToken } from "../../../common/utils/jwt.util";
 import {
   findActiveSessionByRefreshTokenHash,
@@ -27,7 +28,7 @@ const refreshAccessTokenService = async (refreshToken: string) => {
   const session = await findActiveSessionByRefreshTokenHash(currentHash);
 
   if (!session) {
-    throw new Error("Invalid or expired refresh token");
+    throw new UnauthorizedError("Invalid or expired refresh token");
   }
 
   const user = session.userId as any;
@@ -49,7 +50,6 @@ const refreshAccessTokenService = async (refreshToken: string) => {
   return {
     accessToken,
     refreshToken: newRefreshToken,
-    token: accessToken,
   };
 };
 
@@ -59,7 +59,7 @@ const logoutService = async (refreshToken: string) => {
   );
 
   if (!revokedSession) {
-    throw new Error("Session not found");
+    throw new NotFoundError("Session not found");
   }
 
   return { sessionId: revokedSession._id.toString() };
@@ -78,9 +78,7 @@ const revokeSessionService = async (
   const session = await revokeSessionById(sessionId, userId, tenantId);
 
   if (!session) {
-    const error = new Error("Session not found") as any;
-    error.statusCode = 404;
-    throw error;
+    throw new NotFoundError("Session not found");
   }
 
   return { sessionId: session._id.toString() };

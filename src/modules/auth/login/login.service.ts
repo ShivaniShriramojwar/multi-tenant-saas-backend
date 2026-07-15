@@ -1,7 +1,12 @@
 import bcrypt from "bcryptjs";
-import { findUserByEmail } from "./login.repository";
+import {
+  findUserByEmail,
+  recordFailedLogin,
+  resetLoginFailures,
+} from "./login.repository";
 import { LoginInput, LoginResponse } from "./login.interface";
 import { generateToken } from "../../../common/utils/jwt.util";
+import { UnauthorizedError } from "../../../common/errors/app-error";
 import {
   createRefreshToken,
   getRefreshTokenExpiry,
@@ -14,6 +19,13 @@ interface LoginMeta {
   ipAddress?: string;
 }
 
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const ACCOUNT_LOCK_MINUTES = 15;
+
+const getLockExpiry = () => {
+  return new Date(Date.now() + ACCOUNT_LOCK_MINUTES * 60 * 1000);
+};
+
 const loginUserService = async (
   data: LoginInput,
   meta: LoginMeta,
@@ -22,14 +34,35 @@ const loginUserService = async (
 
   // 1. Check user exists
   const user = await findUserByEmail(email);
+
   if (!user) {
-    throw new Error("Invalid email or password");
+    throw new UnauthorizedError("Invalid email or password");
+  }
+
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    throw new UnauthorizedError("Invalid email or password");
   }
 
   // 2. Compare password
   const isMatch = await bcrypt.compare(password, user.password);
+
   if (!isMatch) {
-    throw new Error("Invalid email or password");
+    const failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+    const lockedUntil = failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS
+      ? getLockExpiry()
+      : undefined;
+
+    await recordFailedLogin(
+      user._id.toString(),
+      failedLoginAttempts,
+      lockedUntil,
+    );
+
+    throw new UnauthorizedError("Invalid email or password");
+  }
+
+  if ((user.failedLoginAttempts || 0) > 0 || user.lockedUntil) {
+    await resetLoginFailures(user._id.toString());
   }
 
   // 3. Generate tokens
@@ -54,7 +87,7 @@ const loginUserService = async (
   return {
     accessToken,
     refreshToken,
-    token: accessToken,
+
     user: {
       id: user._id.toString(),
       name: user.name,

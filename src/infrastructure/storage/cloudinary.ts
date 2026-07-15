@@ -1,4 +1,8 @@
-import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
+import {
+  v2 as cloudinary,
+  UploadApiResponse,
+  UploadApiOptions,
+} from "cloudinary";
 import { Readable } from "stream";
 
 cloudinary.config({
@@ -10,8 +14,13 @@ cloudinary.config({
 interface CloudinaryUploadInput {
   buffer: Buffer;
   folder: string;
-  resourceType?: "image" | "raw" | "auto";
+  resourceType?: UploadApiOptions["resource_type"];
   publicId?: string;
+}
+
+interface CloudinaryDeleteInput {
+  publicId: string;
+  resourceType?: UploadApiOptions["resource_type"];
 }
 
 const uploadToCloudinary = async ({
@@ -54,4 +63,21 @@ const uploadToCloudinary = async ({
   });
 };
 
-export { uploadToCloudinary };
+const deleteFromCloudinary = async ({
+  publicId,
+  resourceType = "image",
+}: CloudinaryDeleteInput) => {
+  if (
+    !process.env.CLOUDINARY_CLOUD_NAME ||
+    !process.env.CLOUDINARY_API_KEY ||
+    !process.env.CLOUDINARY_API_SECRET
+  ) {
+    throw new Error("Cloudinary environment variables are not configured");
+  }
+
+  return cloudinary.uploader.destroy(publicId, {
+    resource_type: resourceType,
+  });
+};
+
+export { uploadToCloudinary, deleteFromCloudinary };

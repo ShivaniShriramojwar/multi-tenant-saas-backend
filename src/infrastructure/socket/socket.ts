@@ -1,6 +1,7 @@
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import { AuthTokenPayload } from "../../common/interfaces/auth.interface";
+import { logger } from "../../common/logger";
 import { verifyJwtToken } from "../../common/utils/jwt.util";
 
 interface AuthenticatedSocket extends Socket {
@@ -62,7 +63,10 @@ const initSocket = (server: HttpServer) => {
     });
 
     socket.on("disconnect", () => {
-      console.log(`Socket disconnected: ${socket.id}`);
+      logger.info(
+        { socketId: socket.id, userId: user.userId, tenantId: user.tenantId },
+        "Socket disconnected",
+      );
     });
   });
 
