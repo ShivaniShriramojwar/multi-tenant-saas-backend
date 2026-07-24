@@ -5,7 +5,7 @@ import {
   updatePermissionsService,
 } from "./permission.service";
 
-const getPermissionsController = async (_req: AuthRequest, res: Response, next: NextFunction) => {
+const getPermissionsController = async (_req: AuthRequest, res: Response) => {
   return res.status(200).json({
     message: "Permissions fetched successfully",
     data: getPermissionsService(),

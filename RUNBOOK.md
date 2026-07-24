@@ -69,7 +69,7 @@ Symptoms:
 
 Actions:
 
-1. Check `MONGO_URL`.
+1. Check `MONGO_URI`.
 2. Check MongoDB network access and credentials.
 3. Confirm `PORT` is available.
 4. Run `npm run build` to catch TypeScript compilation errors.
@@ -89,7 +89,7 @@ Redis down:
 
 S3 down:
 
-- Check `AWS_REGION`, `AWS_S3_BUCKET`, and AWS credentials.
+- Check `AWS_REGION`, `AWS_S3_BUCKET_NAME`, and AWS credentials.
 - Confirm the bucket exists and the principal can call `HeadBucket`.
 
 ### Order Jobs Are Not Completing

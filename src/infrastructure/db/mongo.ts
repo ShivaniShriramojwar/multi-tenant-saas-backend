@@ -3,13 +3,13 @@ import { logger } from "../../common/logger";
 
 const connectDB = async () => {
   try {
-    if (!process.env.MONGO_URL) {
-      throw new Error("MONGO_URL is not defined in environment variables");
+    const mongoUri = process.env.MONGO_URI || process.env.MONGO_URL;
+
+    if (!mongoUri) {
+      throw new Error("MONGO_URI is not defined in environment variables");
     }
 
-    await mongoose.connect(process.env.MONGO_URL, {
-      retryWrites: false,
-    });
+    await mongoose.connect(mongoUri);
 
     logger.info("MongoDB connected");
   } catch (error) {

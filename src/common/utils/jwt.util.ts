@@ -14,7 +14,7 @@ const generateToken = (payload: AuthTokenPayload): string => {
 const verifyJwtToken = (token: string): AuthTokenPayload => {
   try {
     return jwt.verify(token, JWT_SECRET) as AuthTokenPayload;
-  } catch (error) {
+  } catch {
     throw new Error("Invalid or expired token");
   }
 };

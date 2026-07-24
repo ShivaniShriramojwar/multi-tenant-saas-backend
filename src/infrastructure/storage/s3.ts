@@ -30,11 +30,11 @@ interface S3UploadResult {
 }
 
 const getS3Config = () => {
-  const bucket = process.env.AWS_S3_BUCKET;
+  const bucket = process.env.AWS_S3_BUCKET_NAME || process.env.AWS_S3_BUCKET;
   const region = process.env.AWS_REGION;
 
   if (!bucket || !region) {
-    throw new Error("AWS S3 environment variables are not configured");
+    throw new Error("AWS_REGION and AWS_S3_BUCKET_NAME are required for S3");
   }
 
   return { bucket, region };

@@ -1,6 +1,6 @@
 import { orderQueue } from "../../infrastructure/queue/order.queue";
 import { logger } from "../../common/logger";
-import { AppError, BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../../common/errors/app-error";
+import { ForbiddenError, NotFoundError } from "../../common/errors/app-error";
 import {
   addOrderAttachments,
   createOrder,
@@ -320,7 +320,14 @@ const uploadOrderAttachmentsService = async (
 
   return addOrderAttachments(
     orderId,
-    attachments.map(({ uploaded, folder, extension, ...attachment }) => attachment),
+    attachments.map((attachment) => ({
+      url: attachment.url,
+      publicId: attachment.publicId,
+      originalName: attachment.originalName,
+      mimeType: attachment.mimeType,
+      size: attachment.size,
+      uploadedAt: attachment.uploadedAt,
+    })),
   );
 };
 

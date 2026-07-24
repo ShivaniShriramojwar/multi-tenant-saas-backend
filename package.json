@@ -9,6 +9,8 @@
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",
     "start": "node dist/server.js",
+    "start:worker:order": "node dist/infrastructure/queue/order.worker.js",
+    "start:worker:email": "node dist/infrastructure/queue/email.worker.js",
     "worker": "ts-node src/infrastructure/queue/order.worker.ts",
     "worker:order": "ts-node src/infrastructure/queue/order.worker.ts",
     "worker:email": "ts-node src/infrastructure/queue/email.worker.ts",

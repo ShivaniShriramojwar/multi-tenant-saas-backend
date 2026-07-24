@@ -40,7 +40,7 @@ const initSocket = (server: HttpServer) => {
 
       socket.user = verifyJwtToken(token);
       return next();
-    } catch (error) {
+    } catch {
       return next(new Error("Invalid or expired token"));
     }
   });

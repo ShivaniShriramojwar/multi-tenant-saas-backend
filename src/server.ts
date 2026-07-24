@@ -8,7 +8,7 @@ import { registerOrderQueueEvents } from "./infrastructure/queue/order.events";
 import { initSocket } from "./infrastructure/socket/socket";
 import { logger } from "./common/logger";
 
-const PORT = process.env.PORT || 5001;
+const PORT = Number(process.env.PORT) || 5001;
 
 const startServer = async () => {
   await connectDB();
@@ -17,7 +17,7 @@ const startServer = async () => {
   initSocket(server);
   registerOrderQueueEvents();
 
-  server.listen(Number(PORT), "0.0.0.0", () => {
+  server.listen(PORT, "0.0.0.0", () => {
     logger.info({ port: PORT }, "Server running");
     logger.info("WebSocket server ready");
   });

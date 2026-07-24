@@ -1,0 +1,58 @@
+services:
+  backend:
+    build: .
+    container_name: saas-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 5001
+      MONGO_USE_TRANSACTIONS: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "5001:5001"
+    depends_on:
+      - redis
+
+  order-worker:
+    build: .
+    container_name: saas-order-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      MONGO_USE_TRANSACTIONS: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - redis
+    command: npm run start:worker:order
+
+  email-worker:
+    build: .
+    container_name: saas-email-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      MONGO_USE_TRANSACTIONS: "false"
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - redis
+    command: npm run start:worker:email
+
+  redis:
+    image: redis:7-alpine
+    container_name: saas-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:

@@ -93,11 +93,6 @@ const getProjectByIdAndTenant = async (projectId: string, tenantId: string) => {
   return project;
 };
 
-const getProjectDetailsById = async (projectId: string) => {
-  return Project.findById(projectId)
-    .populate("createdBy", "name email")
-    .populate("tenantId", "name");
-};
 /**
  * update Project By Id
  */

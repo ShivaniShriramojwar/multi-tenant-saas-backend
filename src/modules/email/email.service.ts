@@ -92,7 +92,7 @@ const queueEmailLogDelivery = async (emailLog: IEmailLog, tenantId: string) => {
       emailLogId: emailLog._id.toString(),
       tenantId,
     });
-  } catch (error) {
+  } catch {
     await deliverEmailLog(emailLog, tenantId);
   }
 };

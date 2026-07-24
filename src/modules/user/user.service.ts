@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { AppError, BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../../common/errors/app-error";
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from "../../common/errors/app-error";
 
 import { ROLES, UserRole } from "../../common/constants/roles";
 import { AUDIT_ACTION } from "../../common/constants/audit-actions";

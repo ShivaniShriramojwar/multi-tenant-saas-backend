@@ -76,4 +76,14 @@ describe("security middleware", () => {
 
     expect(callback).toHaveBeenCalledWith(null, true);
   });
+
+  it("rejects localhost origins in production when not configured", () => {
+    process.env.NODE_ENV = "production";
+    process.env.CLIENT_URL = "https://app.example.com";
+    const callback = jest.fn();
+
+    corsOptions.origin("http://localhost:5173", callback);
+
+    expect(callback).toHaveBeenCalledWith(expect.any(Error));
+  });
 });

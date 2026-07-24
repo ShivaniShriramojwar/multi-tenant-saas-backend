@@ -1,6 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
 import {
-  ENTITY_TYPE,
   ENTITY_TYPES,
   EntityType,
 } from "../../common/constants/entity-type";

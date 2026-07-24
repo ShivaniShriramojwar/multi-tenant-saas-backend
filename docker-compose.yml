@@ -1,0 +1,45 @@
+services:
+  backend:
+    build: .
+    container_name: saas-backend
+    ports:
+      - "5001:5000"
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - mongo
+      - redis
+    command: npm run dev
+
+  worker:
+    build: .
+    container_name: saas-worker
+    env_file:
+      - .env
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - mongo
+      - redis
+    command: npm run worker
+
+  mongo:
+    image: mongo
+    container_name: saas-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis
+    container_name: saas-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  mongo_data:
