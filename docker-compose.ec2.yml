@@ -20,7 +20,10 @@ services:
       - redis_data:/data
 
   backend:
-    build: .
+    image: tenantrix-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: saas-backend
     restart: unless-stopped
     env_file:
@@ -32,8 +35,11 @@ services:
       MONGO_USE_TRANSACTIONS: "false"
       REDIS_HOST: redis
       REDIS_PORT: 6379
+
+    # Nginx can access it locally, but port 5001 is not exposed publicly.
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
+
     depends_on:
       mongo:
         condition: service_healthy
@@ -41,7 +47,7 @@ services:
         condition: service_started
 
   order-worker:
-    build: .
+    image: tenantrix-app:latest
     container_name: saas-order-worker
     restart: unless-stopped
     env_file:
@@ -60,7 +66,7 @@ services:
     command: npm run start:worker:order
 
   email-worker:
-    build: .
+    image: tenantrix-app:latest
     container_name: saas-email-worker
     restart: unless-stopped
     env_file:
