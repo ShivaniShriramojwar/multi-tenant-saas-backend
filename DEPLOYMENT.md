@@ -25,7 +25,7 @@ MONGO_URI=mongodb://127.0.0.1:27017/backend-saas?retryWrites=false
 MONGO_USE_TRANSACTIONS=false
 JWT_SECRET=replace-with-a-long-random-secret
 CLIENT_URL=http://localhost:3000,http://localhost:5173
-REDIS_HOST=127.0.0.1
+REDIS_HOST=redis
 REDIS_PORT=6379
 AWS_REGION=ap-south-1
 AWS_S3_BUCKET_NAME=your-bucket
@@ -282,31 +282,31 @@ docker cp saas-mongo:/tmp/backend-saas.archive ./backend-saas.archive
 
 ## Environment Variables
 
-| Variable | Required | Description |
-| --- | --- | --- |
-| `PORT` | Recommended | HTTP port. Use `5001` for the provided EC2 compose file; code fallback is `5001`. |
-| `NODE_ENV` | Recommended | Use `production` in production. |
-| `LOG_LEVEL` | No | Pino log level. Defaults to `info`. |
-| `MONGO_URI` | Yes | MongoDB connection string. Use a MongoDB Atlas SRV URI in EC2, for example `mongodb+srv://username:password@cluster.mongodb.net/backendSaas`. |
-| `MONGO_USE_TRANSACTIONS` | No | Set to `true` only when MongoDB supports transactions, such as a replica set or managed MongoDB cluster. Defaults to non-transactional registration. |
-| `JWT_SECRET` | Yes | Secret used to sign and verify JWTs. Use a long random value. |
-| `CLIENT_URL` | Production yes | Comma-separated CORS allowed origins. |
-| `REQUEST_BODY_LIMIT` | No | JSON and URL-encoded body limit. Defaults to `1mb`. |
-| `READINESS_TIMEOUT_MS` | No | Per-dependency readiness timeout. Defaults to `3000`. |
-| `REDIS_HOST` | Yes for queues | Redis host. Defaults to `127.0.0.1`. |
-| `REDIS_PORT` | Yes for queues | Redis port. Defaults to `6379`. |
-| `REDIS_PASSWORD` | If Redis requires it | Redis password. |
-| `AWS_REGION` | Yes for S3 | AWS region for S3 client. |
-| `AWS_ACCESS_KEY_ID` | Yes for S3 | AWS access key ID. Prefer instance/task roles in cloud environments when possible. |
-| `AWS_SECRET_ACCESS_KEY` | Yes for S3 | AWS secret access key. Prefer managed credentials when possible. |
-| `AWS_S3_BUCKET_NAME` | Yes for S3 | Bucket used for documents and attachments. |
-| `AWS_S3_PUBLIC_BASE_URL` | No | Optional CDN/custom base URL for stored object URLs. |
-| `AWS_S3_SIGNED_URL_EXPIRES_IN` | No | Signed download URL lifetime in seconds. Defaults to `300`. |
-| `CLOUDINARY_CLOUD_NAME` | If using Cloudinary | Cloudinary cloud name. |
-| `CLOUDINARY_API_KEY` | If using Cloudinary | Cloudinary API key. |
-| `CLOUDINARY_API_SECRET` | If using Cloudinary | Cloudinary API secret. |
-| `EMAIL_DELIVERY_MODE` | No | `local`, `log`, or `fail`. Defaults to local-style provider IDs. |
-| `EMAIL_WORKER_CONCURRENCY` | No | Email worker concurrency. Defaults to `5`. |
+| Variable                       | Required             | Description                                                                                                                                          |
+| ------------------------------ | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                         | Recommended          | HTTP port. Use `5001` for the provided EC2 compose file; code fallback is `5001`.                                                                    |
+| `NODE_ENV`                     | Recommended          | Use `production` in production.                                                                                                                      |
+| `LOG_LEVEL`                    | No                   | Pino log level. Defaults to `info`.                                                                                                                  |
+| `MONGO_URI`                    | Yes                  | MongoDB connection string. Use a MongoDB Atlas SRV URI in EC2, for example `mongodb+srv://username:password@cluster.mongodb.net/backendSaas`.        |
+| `MONGO_USE_TRANSACTIONS`       | No                   | Set to `true` only when MongoDB supports transactions, such as a replica set or managed MongoDB cluster. Defaults to non-transactional registration. |
+| `JWT_SECRET`                   | Yes                  | Secret used to sign and verify JWTs. Use a long random value.                                                                                        |
+| `CLIENT_URL`                   | Production yes       | Comma-separated CORS allowed origins.                                                                                                                |
+| `REQUEST_BODY_LIMIT`           | No                   | JSON and URL-encoded body limit. Defaults to `1mb`.                                                                                                  |
+| `READINESS_TIMEOUT_MS`         | No                   | Per-dependency readiness timeout. Defaults to `3000`.                                                                                                |
+| `REDIS_HOST`                   | Yes for queues       | Redis host. Defaults to `127.0.0.1`.                                                                                                                 |
+| `REDIS_PORT`                   | Yes for queues       | Redis port. Defaults to `6379`.                                                                                                                      |
+| `REDIS_PASSWORD`               | If Redis requires it | Redis password.                                                                                                                                      |
+| `AWS_REGION`                   | Yes for S3           | AWS region for S3 client.                                                                                                                            |
+| `AWS_ACCESS_KEY_ID`            | Yes for S3           | AWS access key ID. Prefer instance/task roles in cloud environments when possible.                                                                   |
+| `AWS_SECRET_ACCESS_KEY`        | Yes for S3           | AWS secret access key. Prefer managed credentials when possible.                                                                                     |
+| `AWS_S3_BUCKET_NAME`           | Yes for S3           | Bucket used for documents and attachments.                                                                                                           |
+| `AWS_S3_PUBLIC_BASE_URL`       | No                   | Optional CDN/custom base URL for stored object URLs.                                                                                                 |
+| `AWS_S3_SIGNED_URL_EXPIRES_IN` | No                   | Signed download URL lifetime in seconds. Defaults to `300`.                                                                                          |
+| `CLOUDINARY_CLOUD_NAME`        | If using Cloudinary  | Cloudinary cloud name.                                                                                                                               |
+| `CLOUDINARY_API_KEY`           | If using Cloudinary  | Cloudinary API key.                                                                                                                                  |
+| `CLOUDINARY_API_SECRET`        | If using Cloudinary  | Cloudinary API secret.                                                                                                                               |
+| `EMAIL_DELIVERY_MODE`          | No                   | `local`, `log`, or `fail`. Defaults to local-style provider IDs.                                                                                     |
+| `EMAIL_WORKER_CONCURRENCY`     | No                   | Email worker concurrency. Defaults to `5`.                                                                                                           |
 
 ## Production Build
 
@@ -342,7 +342,6 @@ For stricter production images, prefer `npm ci`, multi-stage builds, and product
    ```
 
 3. Provision dependencies:
-
    - MongoDB replica set or managed MongoDB.
    - Redis with persistence and eviction policy appropriate for queues.
    - S3 bucket with private access.
@@ -365,12 +364,10 @@ For stricter production images, prefer `npm ci`, multi-stage builds, and product
    ```
 
 7. Configure load balancer checks:
-
    - Liveness: `GET /health`
    - Readiness: `GET /ready`
 
 8. Verify:
-
    - `/health` returns `200`.
    - `/ready` returns `200` and MongoDB, Redis, and S3 checks are `up`.
    - `/api-docs` loads.
