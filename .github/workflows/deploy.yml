@@ -19,7 +19,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          script_stop: true
+
           command_timeout: 20m
           script: |
             set -e
@@ -31,7 +31,7 @@ jobs:
             git reset --hard origin/main
 
             echo "Building and restarting containers..."
-            docker compose -f docker-compose.ec2.yml up -d --build --remove-orphans
+            COMPOSE_PARALLEL_LIMIT=1 docker compose -f docker-compose.ec2.yml up -d --build --remove-orphans
 
             echo "Removing unused Docker images..."
             docker image prune -f
