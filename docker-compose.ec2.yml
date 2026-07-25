@@ -1,4 +1,24 @@
 services:
+  mongo:
+    image: mongo:8
+    container_name: saas-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: saas-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
   backend:
     build: .
     container_name: saas-backend
@@ -8,13 +28,17 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5001
+      MONGO_URI: mongodb://mongo:27017/backend-saas?retryWrites=false
       MONGO_USE_TRANSACTIONS: "false"
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:
       - "5001:5001"
     depends_on:
-      - redis
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   order-worker:
     build: .
@@ -24,11 +48,15 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/backend-saas?retryWrites=false
       MONGO_USE_TRANSACTIONS: "false"
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
-      - redis
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
     command: npm run start:worker:order
 
   email-worker:
@@ -39,20 +67,17 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/backend-saas?retryWrites=false
       MONGO_USE_TRANSACTIONS: "false"
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
-      - redis
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_started
     command: npm run start:worker:email
 
-  redis:
-    image: redis:7-alpine
-    container_name: saas-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-
 volumes:
+  mongo_data:
   redis_data:
