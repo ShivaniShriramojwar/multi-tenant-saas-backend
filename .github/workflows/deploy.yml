@@ -19,31 +19,32 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-
+          timeout: 120s
           command_timeout: 20m
-        script: |
-          set -e
 
-          cd "${{ secrets.EC2_PROJECT_PATH }}"
+          script: |
+            set -e
 
-          echo "Pulling latest code..."
-          git fetch origin main
-          git reset --hard origin/main
+            cd "${{ secrets.EC2_PROJECT_PATH }}"
 
-          echo "Building application image once..."
-          docker compose -f docker-compose.ec2.yml build backend
+            echo "Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
 
-          echo "Starting containers..."
-          docker compose -f docker-compose.ec2.yml up -d --remove-orphans
+            echo "Building application image once..."
+            docker compose -f docker-compose.ec2.yml build backend
 
-          echo "Removing unused Docker images..."
-          docker image prune -f
+            echo "Starting containers..."
+            docker compose -f docker-compose.ec2.yml up -d --remove-orphans
 
-          echo "Checking running containers..."
-          docker compose -f docker-compose.ec2.yml ps
+            echo "Removing unused Docker images..."
+            docker image prune -f
 
-          echo "Checking API..."
-          sleep 15
-          curl --fail --silent --show-error http://localhost:5001
+            echo "Checking running containers..."
+            docker compose -f docker-compose.ec2.yml ps
 
-          echo "Deployment completed successfully."
+            echo "Checking API..."
+            sleep 15
+            curl --fail --silent --show-error http://localhost:5001
+
+            echo "Deployment completed successfully."
