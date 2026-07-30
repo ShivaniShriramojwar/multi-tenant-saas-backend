@@ -2,6 +2,11 @@ import type { CorsOptions } from "cors";
 import type { NextFunction, Request, Response } from "express";
 
 const DEFAULT_BODY_LIMIT = "1mb";
+const LOCAL_DEV_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+type CorsOriginCallback = (
+  origin: string | undefined,
+  callback: (error: Error | null, allow?: boolean) => void,
+) => void;
 
 class CorsError extends Error {
   statusCode = 403;
@@ -40,36 +45,59 @@ const getAllowedCorsOrigins = (): Set<string> => {
   return new Set(configuredOrigins);
 };
 
+const isLocalDevelopmentOrigin = (origin: string): boolean => {
+  if (process.env.NODE_ENV === "production") {
+    return false;
+  }
+
+  try {
+    const url = new URL(origin);
+
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      LOCAL_DEV_HOSTS.has(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const corsOrigin: CorsOriginCallback = (origin, callback) => {
+  /*
+   * Allow requests without an Origin header.
+   *
+   * Examples:
+   * - Postman
+   * - curl
+   * - server-to-server requests
+   * - health checks
+   */
+  if (!origin) {
+    callback(null, true);
+    return;
+  }
+
+  const normalizedOrigin = normalizeOrigin(origin);
+  const allowedOrigins = getAllowedCorsOrigins();
+
+  if (
+    normalizedOrigin &&
+    (allowedOrigins.has(normalizedOrigin) ||
+      isLocalDevelopmentOrigin(normalizedOrigin))
+  ) {
+    callback(null, true);
+    return;
+  }
+
+  console.warn("CORS request blocked", {
+    origin: normalizedOrigin || origin,
+  });
+
+  callback(new CorsError(normalizedOrigin || origin));
+};
+
 const corsOptions: CorsOptions = {
-  origin(origin, callback) {
-    /*
-     * Allow requests without an Origin header.
-     *
-     * Examples:
-     * - Postman
-     * - curl
-     * - server-to-server requests
-     * - health checks
-     */
-    if (!origin) {
-      callback(null, true);
-      return;
-    }
-
-    const normalizedOrigin = normalizeOrigin(origin);
-    const allowedOrigins = getAllowedCorsOrigins();
-
-    if (normalizedOrigin && allowedOrigins.has(normalizedOrigin)) {
-      callback(null, true);
-      return;
-    }
-
-    console.warn("CORS request blocked", {
-      origin: normalizedOrigin || origin,
-    });
-
-    callback(new CorsError(normalizedOrigin || origin));
-  },
+  origin: corsOrigin,
 
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 
@@ -136,4 +164,10 @@ const mongoSanitize = (
   next();
 };
 
-export { CorsError, corsOptions, getRequestBodyLimit, mongoSanitize };
+export {
+  CorsError,
+  corsOptions,
+  corsOrigin,
+  getRequestBodyLimit,
+  mongoSanitize,
+};

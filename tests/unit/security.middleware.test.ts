@@ -1,5 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import { corsOptions, mongoSanitize } from "../../src/common/middleware/security.middleware";
+import {
+  corsOrigin,
+  mongoSanitize,
+} from "../../src/common/middleware/security.middleware";
 
 const runMongoSanitize = (req: Partial<Request>) => {
   const next = jest.fn() as NextFunction;
@@ -52,7 +55,7 @@ describe("security middleware", () => {
     process.env.CLIENT_URL = "";
     const callback = jest.fn();
 
-    corsOptions.origin("http://localhost:5000", callback);
+    corsOrigin("http://localhost:5000", callback);
 
     expect(callback).toHaveBeenCalledWith(null, true);
   });
@@ -62,7 +65,7 @@ describe("security middleware", () => {
     process.env.CLIENT_URL = "";
     const callback = jest.fn();
 
-    corsOptions.origin("https://example.com", callback);
+    corsOrigin("https://example.com", callback);
 
     expect(callback).toHaveBeenCalledWith(expect.any(Error));
   });
@@ -72,7 +75,7 @@ describe("security middleware", () => {
     process.env.CLIENT_URL = "https://app.example.com";
     const callback = jest.fn();
 
-    corsOptions.origin("https://app.example.com", callback);
+    corsOrigin("https://app.example.com", callback);
 
     expect(callback).toHaveBeenCalledWith(null, true);
   });
@@ -83,7 +86,7 @@ describe("security middleware", () => {
     process.env.API_BASE_URL = "https://tenantrix.duckdns.org/";
     const callback = jest.fn();
 
-    corsOptions.origin("https://tenantrix.duckdns.org", callback);
+    corsOrigin("https://tenantrix.duckdns.org", callback);
 
     expect(callback).toHaveBeenCalledWith(null, true);
   });
@@ -93,7 +96,7 @@ describe("security middleware", () => {
     process.env.CLIENT_URL = "https://app.example.com/";
     const callback = jest.fn();
 
-    corsOptions.origin("https://app.example.com", callback);
+    corsOrigin("https://app.example.com", callback);
 
     expect(callback).toHaveBeenCalledWith(null, true);
   });
@@ -103,7 +106,7 @@ describe("security middleware", () => {
     process.env.CLIENT_URL = "https://app.example.com";
     const callback = jest.fn();
 
-    corsOptions.origin("http://localhost:5173", callback);
+    corsOrigin("http://localhost:5173", callback);
 
     expect(callback).toHaveBeenCalledWith(
       expect.objectContaining({
