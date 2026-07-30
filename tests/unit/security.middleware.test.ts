@@ -77,6 +77,27 @@ describe("security middleware", () => {
     expect(callback).toHaveBeenCalledWith(null, true);
   });
 
+  it("allows the configured public API origin for Swagger in production", () => {
+    process.env.NODE_ENV = "production";
+    process.env.CLIENT_URL = "";
+    process.env.API_BASE_URL = "https://tenantrix.duckdns.org/";
+    const callback = jest.fn();
+
+    corsOptions.origin("https://tenantrix.duckdns.org", callback);
+
+    expect(callback).toHaveBeenCalledWith(null, true);
+  });
+
+  it("normalizes trailing slashes in configured frontend origins", () => {
+    process.env.NODE_ENV = "production";
+    process.env.CLIENT_URL = "https://app.example.com/";
+    const callback = jest.fn();
+
+    corsOptions.origin("https://app.example.com", callback);
+
+    expect(callback).toHaveBeenCalledWith(null, true);
+  });
+
   it("rejects localhost origins in production when not configured", () => {
     process.env.NODE_ENV = "production";
     process.env.CLIENT_URL = "https://app.example.com";
@@ -84,6 +105,11 @@ describe("security middleware", () => {
 
     corsOptions.origin("http://localhost:5173", callback);
 
-    expect(callback).toHaveBeenCalledWith(expect.any(Error));
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Origin not allowed by CORS",
+        statusCode: 403,
+      }),
+    );
   });
 });

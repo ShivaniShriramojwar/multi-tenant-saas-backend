@@ -1,57 +1,97 @@
-import { NextFunction, Request, Response } from "express";
+import type { CorsOptions } from "cors";
+import type { NextFunction, Request, Response } from "express";
 
 const DEFAULT_BODY_LIMIT = "1mb";
-const LOCAL_DEV_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
-const getRequestBodyLimit = () => process.env.REQUEST_BODY_LIMIT || DEFAULT_BODY_LIMIT;
+class CorsError extends Error {
+  statusCode = 403;
+  code = "CORS_ORIGIN_DENIED";
 
-const getAllowedCorsOrigins = () => {
-  const configuredOrigins = (process.env.CLIENT_URL || "")
-    .split(",")
-    .map((origin) => origin.trim())
+  constructor(origin?: string) {
+    super(
+      process.env.NODE_ENV === "production"
+        ? "Origin not allowed by CORS"
+        : `Origin not allowed by CORS: ${origin}`,
+    );
+
+    this.name = "CorsError";
+  }
+}
+
+const getRequestBodyLimit = () =>
+  process.env.REQUEST_BODY_LIMIT || DEFAULT_BODY_LIMIT;
+
+const normalizeOrigin = (value: string): string => {
+  try {
+    return new URL(value.trim()).origin;
+  } catch {
+    return "";
+  }
+};
+
+const getAllowedCorsOrigins = (): Set<string> => {
+  const configuredOrigins = [
+    ...(process.env.CLIENT_URL || "").split(","),
+    process.env.API_BASE_URL || "",
+  ]
+    .map(normalizeOrigin)
     .filter(Boolean);
 
-  if (configuredOrigins.length > 0) {
-    return new Set(configuredOrigins);
-  }
-
-  return new Set<string>();
+  return new Set(configuredOrigins);
 };
 
-const isLocalDevOrigin = (origin: string) => {
-  if (process.env.NODE_ENV === "production") {
-    return false;
-  }
-
-  try {
-    const url = new URL(origin);
-
-    return ["http:", "https:"].includes(url.protocol) && LOCAL_DEV_HOSTS.has(url.hostname);
-  } catch {
-    return false;
-  }
-};
-
-const corsOptions = {
-  origin: (
-    origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void,
-  ) => {
+const corsOptions: CorsOptions = {
+  origin(origin, callback) {
+    /*
+     * Allow requests without an Origin header.
+     *
+     * Examples:
+     * - Postman
+     * - curl
+     * - server-to-server requests
+     * - health checks
+     */
     if (!origin) {
-      return callback(null, true);
+      callback(null, true);
+      return;
     }
 
-    if (getAllowedCorsOrigins().has(origin) || isLocalDevOrigin(origin)) {
-      return callback(null, true);
+    const normalizedOrigin = normalizeOrigin(origin);
+    const allowedOrigins = getAllowedCorsOrigins();
+
+    if (normalizedOrigin && allowedOrigins.has(normalizedOrigin)) {
+      callback(null, true);
+      return;
     }
 
-    return callback(new Error("Not allowed by CORS"));
+    console.warn("CORS request blocked", {
+      origin: normalizedOrigin || origin,
+    });
+
+    callback(new CorsError(normalizedOrigin || origin));
   },
-  credentials: true,
+
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
+  allowedHeaders: ["Origin", "Content-Type", "Accept", "Authorization"],
+
+  exposedHeaders: ["Content-Disposition"],
+
+  /*
+   * Tokens are sent using:
+   * Authorization: Bearer <access-token>
+   *
+   * Cookies are not being used in the current Tenantrix version.
+   */
+  credentials: false,
+
   optionsSuccessStatus: 204,
+
+  maxAge: 86400,
 };
 
-const hasUnsafeMongoKey = (key: string) => key.startsWith("$") || key.includes(".");
+const hasUnsafeMongoKey = (key: string): boolean =>
+  key.startsWith("$") || key.includes(".");
 
 const sanitizeMongoValue = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -74,12 +114,26 @@ const sanitizeMongoValue = (value: unknown): unknown => {
   );
 };
 
-const mongoSanitize = (req: Request, _res: Response, next: NextFunction) => {
+const mongoSanitize = (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void => {
   req.body = sanitizeMongoValue(req.body);
-  (req as any).query = sanitizeMongoValue(req.query);
-  (req as any).params = sanitizeMongoValue(req.params);
 
-  return next();
+  Object.defineProperty(req, "query", {
+    value: sanitizeMongoValue(req.query),
+    writable: true,
+    configurable: true,
+  });
+
+  Object.defineProperty(req, "params", {
+    value: sanitizeMongoValue(req.params),
+    writable: true,
+    configurable: true,
+  });
+
+  next();
 };
 
-export { corsOptions, getRequestBodyLimit, mongoSanitize };
+export { CorsError, corsOptions, getRequestBodyLimit, mongoSanitize };

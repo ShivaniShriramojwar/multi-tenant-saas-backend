@@ -9,10 +9,11 @@ services:
     environment:
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      API_BASE_URL: http://localhost:5001
     depends_on:
       - mongo
       - redis
-    command: npm run dev
+    command: npm start
 
   worker:
     build: .
@@ -25,7 +26,7 @@ services:
     depends_on:
       - mongo
       - redis
-    command: npm run worker
+    command: npm run start:worker:order
 
   mongo:
     image: mongo
