@@ -27,6 +27,8 @@ Production-oriented multi-tenant SaaS backend built with Express, TypeScript, Mo
 
 ## Documentation
 
+- [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md): product purpose, roles, modules, real-world comparisons, user value, and use cases.
+- [FRONTEND_DESIGN_FLOW.md](./FRONTEND_DESIGN_FLOW.md): frontend information architecture, screens, role-based navigation, API integration, and delivery plan.
 - [ARCHITECTURE.md](./ARCHITECTURE.md): architecture, module responsibilities, request flow, queues, S3 flow, notifications.
 - [API.md](./API.md): API conventions, auth, endpoint inventory, OpenAPI links.
 - [DEPLOYMENT.md](./DEPLOYMENT.md): local setup, Docker setup, environment variables, production deployment.

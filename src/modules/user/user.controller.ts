@@ -20,8 +20,8 @@ const getUserProfileController = async (req: AuthRequest, res: Response, next: N
     const user = await getUserProfileService(userId);
 
     return res.status(200).json({
-      message: "User profile fetched successfully",
-      data: user,
+      message: "Profile fetched successfully",
+      data: { user },
     });
   } catch (error) {
     next(error);

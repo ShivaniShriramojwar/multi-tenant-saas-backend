@@ -3,7 +3,10 @@ import { registerUserService } from "./register.service";
 
 const registerController = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await registerUserService(req.body);
+    const result = await registerUserService(req.body, {
+      userAgent: req.get("user-agent"),
+      ipAddress: req.ip,
+    });
 
     return res.status(201).json({
       message: "User registered successfully",

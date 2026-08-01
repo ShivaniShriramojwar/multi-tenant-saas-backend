@@ -290,7 +290,7 @@ const paths: Record<string, Partial<Record<HttpMethod, Operation>>> = {
       tags: ["Users"],
       summary: "Get current user profile",
       responses: {
-        "200": ok("#/components/schemas/UserResponse"),
+        "200": ok("#/components/schemas/ProfileResponse", "Profile fetched successfully"),
         ...commonErrors,
       },
     }),
@@ -957,7 +957,7 @@ const swaggerSpec = {
       AuthResponse: wrapped({
         type: "object",
         properties: {
-          user: { $ref: "#/components/schemas/User" },
+          user: { $ref: "#/components/schemas/AuthUser" },
           accessToken: { type: "string", example: "access.jwt.token" },
           refreshToken: { type: "string", example: "refresh.jwt.token" },
         },
@@ -993,6 +993,29 @@ const swaggerSpec = {
           },
         ],
       },
+      AuthUser: {
+        allOf: [
+          { $ref: "#/components/schemas/User" },
+          {
+            type: "object",
+            required: ["permissions"],
+            properties: {
+              permissions: {
+                type: "array",
+                items: { type: "string" },
+                example: [
+                  "manage_company",
+                  "manage_users",
+                  "manage_roles",
+                  "view_dashboard",
+                  "create_project",
+                  "view_project",
+                ],
+              },
+            },
+          },
+        ],
+      },
       CreateUserRequest: {
         type: "object",
         required: ["name", "email", "password", "role"],
@@ -1016,6 +1039,12 @@ const swaggerSpec = {
         },
       },
       UserResponse: wrapped({ $ref: "#/components/schemas/User" }),
+      ProfileResponse: wrapped({
+        type: "object",
+        properties: {
+          user: { $ref: "#/components/schemas/AuthUser" },
+        },
+      }),
       UserListResponse: paged("#/components/schemas/User"),
       Project: {
         allOf: [

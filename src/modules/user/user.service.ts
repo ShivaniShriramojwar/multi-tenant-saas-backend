@@ -3,7 +3,10 @@ import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from ".
 
 import { ROLES, UserRole } from "../../common/constants/roles";
 import { AUDIT_ACTION } from "../../common/constants/audit-actions";
-import { hasPermission } from "../../common/permissions/role-permissions";
+import {
+  getPermissionsForRole,
+  hasPermission,
+} from "../../common/permissions/role-permissions";
 import { getPaginationMeta } from "../../common/utils/pagination.util";
 
 import { emitTenantNotification } from "../../infrastructure/socket/socket";
@@ -68,6 +71,8 @@ const formatUserResponse = (user: any) => {
     name: user.name,
     email: user.email,
     role: user.role,
+    permissions: getPermissionsForRole(user.role),
+    tenantId: tenant.id,
     tenant,
     profileImage: user.profileImage,
   };

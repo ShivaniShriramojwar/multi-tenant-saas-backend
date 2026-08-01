@@ -1,4 +1,5 @@
 import { UserRole } from "../../../common/constants/roles";
+import { Permission } from "../../../common/permissions/role-permissions";
 
 interface RegisterInput {
   name: string;
@@ -8,12 +9,16 @@ interface RegisterInput {
 }
 
 interface RegisterResponse {
+  accessToken: string;
+  refreshToken: string;
+
   user: {
     id: string;
     name: string;
     email: string;
     role: UserRole;
     tenantId: string;
+    permissions: readonly Permission[];
   };
 
   tenant: {

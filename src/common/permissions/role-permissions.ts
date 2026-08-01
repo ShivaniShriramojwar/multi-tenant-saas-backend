@@ -377,3 +377,9 @@ export const hasPermission = (
 export const getRolePermissions = (): Readonly<
   Record<UserRole, readonly Permission[]>
 > => rolePermissions;
+
+export const getPermissionsForRole = (
+  role: UserRole,
+): readonly Permission[] => {
+  return rolePermissions[role] ?? [];
+};

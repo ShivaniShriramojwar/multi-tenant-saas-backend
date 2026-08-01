@@ -13,6 +13,7 @@ import {
   hashRefreshToken,
 } from "../session/session.util";
 import { createSession } from "../session/session.repository";
+import { getPermissionsForRole } from "../../../common/permissions/role-permissions";
 
 interface LoginMeta {
   userAgent?: string;
@@ -84,6 +85,8 @@ const loginUserService = async (
   });
 
   // 4. Return response
+  const permissions = getPermissionsForRole(user.role);
+
   return {
     accessToken,
     refreshToken,
@@ -93,6 +96,7 @@ const loginUserService = async (
       name: user.name,
       email: user.email,
       role: user.role,
+      permissions,
     },
   };
 };

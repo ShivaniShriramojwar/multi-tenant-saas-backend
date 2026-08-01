@@ -1,4 +1,5 @@
 import { UserRole } from "../../../common/constants/roles";
+import { Permission } from "../../../common/permissions/role-permissions";
 
 interface LoginInput {
   email: string;
@@ -14,6 +15,7 @@ interface LoginResponse {
     name: string;
     email: string;
     role: UserRole;
+    permissions: readonly Permission[];
   };
 }
 

@@ -14,9 +14,23 @@ import { AUDIT_ACTION } from "../../../common/constants/audit-actions";
 import { ConflictError } from "../../../common/errors/app-error";
 import { ITenant } from "../../tenant/tenant.model";
 import { IUser } from "../../user/user.types";
+import { getPermissionsForRole } from "../../../common/permissions/role-permissions";
+import { generateToken } from "../../../common/utils/jwt.util";
+import {
+  createRefreshToken,
+  getRefreshTokenExpiry,
+  hashRefreshToken,
+} from "../session/session.util";
+import { createSession } from "../session/session.repository";
+
+interface RegisterMeta {
+  userAgent?: string;
+  ipAddress?: string;
+}
 
 const registerUserService = async (
   data: RegisterInput,
+  meta: RegisterMeta,
 ): Promise<RegisterResponse> => {
   const { name, email, password, tenantName } = data;
 
@@ -107,13 +121,34 @@ const registerUserService = async (
     throw new Error("Registration failed");
   }
 
+  const accessToken = generateToken({
+    userId: user._id.toString(),
+    tenantId: user.tenantId.toString(),
+    role: user.role,
+  });
+  const refreshToken = createRefreshToken();
+
+  await createSession({
+    userId: user._id.toString(),
+    tenantId: user.tenantId.toString(),
+    refreshTokenHash: hashRefreshToken(refreshToken),
+    userAgent: meta.userAgent,
+    ipAddress: meta.ipAddress,
+    expiresAt: getRefreshTokenExpiry(),
+  });
+
+  const permissions = getPermissionsForRole(user.role);
+
   return {
+    accessToken,
+    refreshToken,
     user: {
       id: user._id.toString(),
       name: user.name,
       email: user.email,
       role: user.role,
       tenantId: user.tenantId.toString(),
+      permissions,
     },
     tenant: {
       id: tenant._id.toString(),

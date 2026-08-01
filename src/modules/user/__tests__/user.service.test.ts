@@ -1,6 +1,7 @@
 import { getUserProfileService } from "../user.service";
 import { getUserById } from "../user.repository";
 import { ROLES } from "../../../common/constants/roles";
+import { getPermissionsForRole } from "../../../common/permissions/role-permissions";
 
 jest.mock("../user.repository");
 
@@ -15,6 +16,7 @@ describe("getUserProfileService", () => {
       name: "Shivani",
       email: "shivani@test.com",
       role: ROLES.SUPER_ADMIN,
+      tenantId: "tenant-123",
       profileImage: {
         url: "https://example.com/profile.jpg",
         publicId: "profile-123",
@@ -31,8 +33,10 @@ describe("getUserProfileService", () => {
       name: "Shivani",
       email: "shivani@test.com",
       role: ROLES.SUPER_ADMIN,
+      permissions: getPermissionsForRole(ROLES.SUPER_ADMIN),
+      tenantId: "tenant-123",
       tenant: {
-        id: "",
+        id: "tenant-123",
         name: undefined,
       },
       profileImage: mockUser.profileImage,
